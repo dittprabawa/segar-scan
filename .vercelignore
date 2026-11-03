@@ -1,0 +1,7 @@
+.venv
+tests
+data
+models
+.vscode
+*.xlsx
+cek*.py
