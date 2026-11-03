@@ -1,0 +1,658 @@
+/* ==========================================================================
+   Google Fonts
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+/* ==========================================================================
+   Variabel & reset
+   ========================================================================== */
+:root {
+  --bg: #0a0f0b;
+  --surface: #111a12;
+  --card: #162019;
+  --card-border: #1f3324;
+  --ink: #e8f5ea;
+  --muted: #7aad85;
+  --green: #22c55e;
+  --green-dim: #16a34a;
+  --green-glow: #22c55e33;
+  --green-ink: #021306;
+  --soft: #162019;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --shadow: 0 8px 40px #00000060, 0 0 0 1px #1f332440;
+  --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+[hidden] { display: none !important; }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+
+img { display: block; max-width: 100%; }
+
+/* ==========================================================================
+   Background radial glow
+   ========================================================================== */
+body::before {
+  content: '';
+  position: fixed;
+  top: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 500px;
+  background: radial-gradient(ellipse, #22c55e18 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ==========================================================================
+   Layout utama
+   ========================================================================== */
+.app {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 480px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
+           max(12px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Header
+   ========================================================================== */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 4px 16px #22c55e30;
+  flex-shrink: 0;
+}
+
+.brand h1 {
+  font-size: clamp(18px, 4.8vw, 20px);
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.brand p {
+  font-size: clamp(10.5px, 2.9vw, 11px);
+  color: var(--muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  color: var(--muted);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+}
+
+.icon-btn:hover {
+  background: var(--card-border);
+  color: var(--ink);
+}
+
+/* ==========================================================================
+   Main & Card / screen
+   ========================================================================== */
+main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  gap: 12px;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.screen {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: clamp(12px, 3.5vw, 16px);
+  box-shadow: var(--shadow);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   Intro
+   ========================================================================== */
+.intro h2 {
+  font-size: clamp(17px, 4.4vw, 20px);
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: var(--ink);
+}
+
+.intro p {
+  font-size: clamp(12px, 3.2vw, 13px);
+  color: var(--muted);
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
+/* ==========================================================================
+   Viewfinder
+   ========================================================================== */
+.viewfinder {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-height: min(42vh, 340px);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #060e08;
+  border: 1px solid var(--card-border);
+  flex-shrink: 1;
+  margin: 0 auto;
+}
+
+.viewfinder video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Placeholder */
+.camera-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted);
+  background: #060e08;
+  text-align: center;
+  padding: 24px;
+}
+
+.camera-emoji {
+  font-size: 44px;
+  opacity: 0.5;
+}
+
+.camera-placeholder strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  opacity: 0.7;
+}
+
+.camera-placeholder small {
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+/* Corner guide */
+.guide {
+  position: absolute;
+  inset: 14%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.corner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-color: var(--green);
+  border-style: solid;
+  border-width: 0;
+  opacity: 0.8;
+}
+
+.tl { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; border-radius: 6px 0 0; }
+.tr { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; border-radius: 0 6px 0; }
+.bl { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 6px; }
+.br { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 6px; }
+
+/* Tip */
+.view-tip {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  white-space: nowrap;
+  background: #06120855;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid #22c55e25;
+  color: #a7f3c0;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Camera message */
+.camera-message {
+  font-size: 12px;
+  color: var(--muted);
+  min-height: 16px;
+  text-align: center;
+}
+
+/* ==========================================================================
+   Tombol
+   ========================================================================== */
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: auto;
+  width: 100%;
+}
+
+.actions .primary {
+  grid-column: 1 / -1;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  padding: 0 10px;
+  font-size: clamp(13px, 3.5vw, 15px);
+  font-weight: 700;
+  transition: all var(--transition);
+  cursor: pointer;
+  border: 1px solid transparent;
+  letter-spacing: -0.2px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.primary {
+  background: linear-gradient(135deg, var(--green) 0%, var(--green-dim) 100%);
+  color: var(--green-ink);
+  border-color: var(--green-dim);
+  box-shadow: 0 4px 20px var(--green-glow);
+}
+
+.primary:hover {
+  background: linear-gradient(135deg, #4ade80, var(--green));
+  box-shadow: 0 6px 28px #22c55e50;
+  transform: translateY(-1px);
+}
+
+.primary:active { transform: translateY(0); }
+
+.secondary {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--card-border);
+}
+
+.secondary:hover {
+  background: var(--card-border);
+}
+
+.subtle {
+  background: transparent;
+  color: var(--green);
+  border-color: var(--card-border);
+}
+
+.subtle:hover {
+  background: var(--green-glow);
+  border-color: #22c55e40;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* ==========================================================================
+   Layar hasil
+   ========================================================================== */
+.result-screen {
+  text-align: center;
+}
+
+#outcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.result-photo {
+  width: 100%;
+  max-width: 300px;
+  height: clamp(120px, 20vh, 160px);
+  margin: 0 auto;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+}
+
+.result-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.type {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-top: 2px;
+}
+
+.score {
+  font-size: clamp(48px, 14vw, 72px);
+  font-weight: 900;
+  letter-spacing: -2px;
+  line-height: 1;
+  color: var(--ink);
+  background: linear-gradient(135deg, var(--ink), var(--green));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.category {
+  font-size: clamp(16px, 4.5vw, 18px);
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.category.good { color: var(--green); }
+.category.warn { color: var(--warning); }
+.category.bad  { color: var(--danger); }
+
+.extra {
+  white-space: pre-line;
+  font-size: clamp(12px, 3.2vw, 13px);
+  line-height: 1.5;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+  word-break: break-word;
+}
+
+.extra:empty { display: none; }
+
+.disclaimer {
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.again {
+  width: 100%;
+  margin-top: auto;
+}
+
+/* ==========================================================================
+   Loading
+   ========================================================================== */
+#loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 0;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--card-border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+#loading h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+#loading p {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ==========================================================================
+   Dialog
+   ========================================================================== */
+dialog {
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  max-width: min(92vw, 440px);
+  width: 100%;
+  color: var(--ink);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+dialog::backdrop {
+  background: #00000090;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.dialog-content { padding: 20px; }
+
+.dialog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dialog-head h2 {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.dialog-content p, .dialog-content li {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 6px;
+  line-height: 1.6;
+}
+
+.dialog-content h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-top: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+footer {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.5;
+  padding: 4px 0;
+}
+
+/* ==========================================================================
+   Responsif
+   ========================================================================== */
+/* Layar HP ramping / sempit (<= 360px seperti iPhone SE, Galaxy Z Flip, dsb) */
+@media (max-width: 360px) {
+  .app {
+    padding-left: 8px;
+    padding-right: 8px;
+    gap: 8px;
+  }
+
+  .screen {
+    padding: 10px;
+    border-radius: var(--radius-md);
+    gap: 8px;
+  }
+
+  .actions {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .actions .primary {
+    grid-column: 1;
+  }
+
+  .btn {
+    height: 44px;
+    font-size: 13.5px;
+  }
+}
+
+/* Layar HP pendek / tinggi terbatas */
+@media (max-height: 700px) {
+  .viewfinder {
+    aspect-ratio: 4 / 3;
+    max-height: 35vh;
+  }
+
+  .screen {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .btn {
+    height: 42px;
+    font-size: 13.5px;
+  }
+
+  .result-photo {
+    height: 110px;
+  }
+
+  .score {
+    font-size: 46px;
+  }
+}
+
+@media (min-width: 520px) {
+  .app {
+    padding-top: calc(env(safe-area-inset-top) + 24px);
+  }
+}
+
+/* ==========================================================================
+   Reduced motion
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
