@@ -9,7 +9,7 @@ load_dotenv()  # baca .env sebelum layanan dibuat
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile  # noqa: E402
 from fastapi.exceptions import RequestValidationError  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
-from fastapi.responses import JSONResponse  # noqa: E402
+from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from backend.app.schemas import PredictionResponse  # noqa: E402
 from backend.app.services import vlm  # noqa: E402
@@ -39,9 +39,10 @@ async def validation_error_handler(request, exc):
     )
 
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 def root():
-    return {"message": "SegerScan API is running"}
+    """Halaman utama langsung membuka antarmuka scan."""
+    return RedirectResponse(url="/ui/")
 
 
 @app.get("/health")
