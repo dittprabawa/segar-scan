@@ -1,5 +1,6 @@
 """SegerScan FastAPI Backend."""
 
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -11,14 +12,24 @@ from fastapi.exceptions import RequestValidationError  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
+from slowapi import Limiter  # noqa: E402
+from slowapi.errors import RateLimitExceeded  # noqa: E402
+from slowapi.util import get_remote_address  # noqa: E402
+
 from backend.app.schemas import PredictionResponse  # noqa: E402
 from backend.app.services import vlm  # noqa: E402
 from backend.app.services.gambar import BukanGambar, TerlaluBesar, buka_gambar  # noqa: E402
 from backend.app.services.inference import InferenceService  # noqa: E402
 
 MAKS_BYTES = 5 * 1024 * 1024  # 5 MB
+RATE_LIMIT = os.getenv("RATE_LIMIT", "10/minute")  # per IP
 
-app = FastAPI(title="SegerScan API", version="1.1.0")
+app = FastAPI(title="SegerScan API", version="1.2.0")
+
+# Rate limit per IP. Penyimpanan di memori per proses; untuk banyak worker
+# gunakan Redis: Limiter(key_func=get_remote_address, storage_uri="redis://...")
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,6 +39,15 @@ app.add_middleware(
 )
 
 service = InferenceService()
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request, exc):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Terlalu banyak permintaan. Coba lagi sebentar lagi."},
+        headers={"Retry-After": "60"},
+    )
 
 
 @app.exception_handler(RequestValidationError)
@@ -57,6 +77,7 @@ def health():
 
 
 @app.post("/predict", response_model=PredictionResponse)
+@limiter.limit(RATE_LIMIT)  # harus di bawah @app.post, dan butuh parameter `request`
 def predict(request: Request, file: UploadFile = File(...)):
     # Sengaja `def` (bukan `async def`): FastAPI menjalankannya di thread pool,
     # sehingga menunggu Gemini tidak memblokir permintaan pengguna lain.

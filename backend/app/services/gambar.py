@@ -3,9 +3,13 @@
 import io
 import os
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 MAX_PIXELS = int(os.getenv("MAX_PIXELS", "25000000"))
+
+# Penegakan batas dilakukan sendiri di bawah; matikan batas bawaan Pillow
+# agar tidak ada warning/error ganda di rentang 89-178 juta piksel.
+Image.MAX_IMAGE_PIXELS = None
 
 
 class BukanGambar(Exception):
@@ -18,14 +22,19 @@ class TerlaluBesar(Exception):
 
 def buka_gambar(data: bytes) -> Image.Image:
     try:
-        img = Image.open(io.BytesIO(data))  # lazy: baru membaca header
-    except Image.DecompressionBombError:
-        raise TerlaluBesar("resolusi terlalu tinggi")
-    except Exception:
-        raise BukanGambar("bukan gambar")
+        img = Image.open(io.BytesIO(data))  # lazy: hanya membaca header
+    except (UnidentifiedImageError, OSError):
+        raise BukanGambar("bukan gambar") from None
+
     if img.width * img.height > MAX_PIXELS:
         raise TerlaluBesar("resolusi terlalu tinggi")
+
     try:
-        return ImageOps.exif_transpose(img).convert("RGB")
-    except Exception:
-        raise BukanGambar("gambar rusak")
+        img = ImageOps.exif_transpose(img)  # tidak mengubah ukuran total piksel
+        if img.mode in ("RGBA", "LA", "P"):
+            rgba = img.convert("RGBA")
+            latar = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+            return Image.alpha_composite(latar, rgba).convert("RGB")
+        return img.convert("RGB")
+    except (OSError, ValueError, SyntaxError):  # file terpotong/rusak saat decode
+        raise BukanGambar("gambar rusak") from None

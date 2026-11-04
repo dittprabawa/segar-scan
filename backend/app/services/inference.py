@@ -23,6 +23,7 @@ class InferenceService:
         weights_path = weights_path or os.getenv("MODEL_PATH", "models/segarscan.pt")
         self.model = None
         self._predict_lokal = None
+        self.nama_model_lokal: Optional[str] = None
         # Model lokal bersifat opsional: server tetap jalan walau torch/ml/model tidak ada
         if os.path.exists(weights_path):
             try:
@@ -30,6 +31,7 @@ class InferenceService:
 
                 self.model = load_model(weights_path)
                 self._predict_lokal = predict
+                self.nama_model_lokal = os.path.basename(weights_path)
             except Exception as e:
                 log.warning("Model lokal tidak dimuat: %s", e)
 
@@ -47,12 +49,14 @@ class InferenceService:
             if _gate.acquire(timeout=GATE_TUNGGU):
                 try:
                     d = vlm.nilai(image, deadline=deadline)
+                    nama_model = d.get("model")
                     if not d["valid"]:
-                        return self._ditolak(d["alasan"])
-                    log.info("Dinilai Gemini model=%s", d.get("model"))
+                        return self._ditolak(d["alasan"], model=nama_model)
+                    log.info("Dinilai Gemini model=%s", nama_model)
                     return self._ok(
                         d["skor"], d["jenis"], "gemini",
                         (d["skor_min"], d["skor_maks"]), d["keyakinan"], d["ciri"],
+                        model=nama_model,
                     )
                 except Exception as e:  # semua model gagal / waktu habis
                     log.warning("Gemini gagal, pindah ke model lokal: %s", str(e)[:200])
@@ -64,25 +68,27 @@ class InferenceService:
         if self.model is not None and self._predict_lokal is not None:
             skor = self._predict_lokal(image, self.model)
             return self._ok(skor, "unknown", "model_lokal",
-                            (max(0.0, skor - 15), min(100.0, skor + 15)), "rendah", "")
+                            (max(0.0, skor - 15), min(100.0, skor + 15)), "rendah", "",
+                            model=self.nama_model_lokal)
 
         raise RuntimeError("Tidak ada penilai yang tersedia")
 
     # --- pembantu -----------------------------------------------------
     @staticmethod
-    def _ditolak(alasan: str) -> dict:
+    def _ditolak(alasan: str, model: Optional[str] = None) -> dict:
         return {"status": "ditolak", "skor": None, "skor_min": None, "skor_maks": None,
                 "label": "Foto belum bisa dinilai", "jenis": "unknown",
                 "keyakinan": None, "saran": "Coba foto ulang.", "ciri": None,
-                "alasan": alasan, "sumber": None}
+                "alasan": alasan, "sumber": None, "model": model}
 
     @classmethod
-    def _ok(cls, skor, jenis, sumber, rentang, keyakinan, ciri) -> dict:
+    def _ok(cls, skor, jenis, sumber, rentang, keyakinan, ciri,
+            model: Optional[str] = None) -> dict:
         return {"status": "ok", "skor": round(skor, 1),
                 "skor_min": round(rentang[0], 1), "skor_maks": round(rentang[1], 1),
                 "label": cls._label(skor), "jenis": jenis, "keyakinan": keyakinan,
                 "saran": cls._saran(skor), "ciri": ciri or None,
-                "alasan": None, "sumber": sumber}
+                "alasan": None, "sumber": sumber, "model": model}
 
     @staticmethod
     def _label(skor: float) -> str:
