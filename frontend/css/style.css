@@ -1,232 +1,172 @@
 /* ==========================================================================
-   Google Fonts
-   ========================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-
-/* ==========================================================================
    Variabel & reset
    ========================================================================== */
 :root {
-  --bg: #0a0f0b;
-  --surface: #111a12;
-  --card: #162019;
-  --card-border: #1f3324;
-  --ink: #e8f5ea;
-  --muted: #7aad85;
-  --green: #22c55e;
-  --green-dim: #16a34a;
-  --green-glow: #22c55e33;
-  --green-ink: #021306;
-  --soft: #162019;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --radius-lg: 24px;
-  --radius-md: 16px;
-  --radius-sm: 12px;
-  --shadow: 0 8px 40px #00000060, 0 0 0 1px #1f332440;
-  --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  color-scheme: light;
+  --bg: #f6faf5;
+  --card: #fff;
+  --ink: #173426;
+  --muted: #52675a;
+  --green: #17683a;
+  --green-ink: #fff;
+  --border: #d8e6d9;
+  --soft: #eaf4eb;
+  --warning: #875200;
+  --danger: #a12222;
 }
 
-*, *::before, *::after {
+* {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
-html {
-  height: 100%;
-  -webkit-text-size-adjust: 100%;
+html,
+body {
+  margin: 0;
+  min-height: 100%;
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
+  font: 16px/1.4 system-ui, -apple-system, Roboto, Arial, sans-serif;
   background: var(--bg);
   color: var(--ink);
-  min-height: 100%;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
 }
 
-[hidden] { display: none !important; }
+[hidden] {
+  display: none !important;
+}
 
 button {
-  font-family: inherit;
+  font: inherit;
   cursor: pointer;
-  border: none;
-  background: none;
 }
 
 button:focus-visible {
-  outline: 2px solid var(--green);
+  outline: 3px solid #ffae00;
   outline-offset: 3px;
-}
-
-img { display: block; max-width: 100%; }
-
-/* ==========================================================================
-   Background radial glow
-   ========================================================================== */
-body::before {
-  content: '';
-  position: fixed;
-  top: -20%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 600px;
-  height: 500px;
-  background: radial-gradient(ellipse, #22c55e18 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
 }
 
 /* ==========================================================================
    Layout utama
    ========================================================================== */
 .app {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 480px;
+  max-width: 520px;
   min-height: 100dvh;
-  margin: 0 auto;
+  margin: auto;
   display: flex;
   flex-direction: column;
-  padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
-           max(12px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
-  gap: 12px;
-  box-sizing: border-box;
+  padding:
+    calc(12px + env(safe-area-inset-top))
+    16px
+    calc(12px + env(safe-area-inset-bottom));
 }
 
-/* ==========================================================================
-   Header
-   ========================================================================== */
 .top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  width: 100%;
+  margin-bottom: 12px;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 0;
+}
+
+.camera-emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-icon {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.camera-icon-small {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 .logo {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #22c55e, #16a34a);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  box-shadow: 0 4px 16px #22c55e30;
-  flex-shrink: 0;
+  font-size: 28px;
+}
+
+.brand .logo img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 .brand h1 {
-  font-size: clamp(18px, 4.8vw, 20px);
-  font-weight: 800;
-  color: var(--ink);
-  letter-spacing: -0.5px;
+  font-size: 20px;
+  margin: 0;
+  color: var(--green);
   line-height: 1.1;
-  white-space: nowrap;
 }
 
 .brand p {
-  font-size: clamp(10.5px, 2.9vw, 11px);
+  font-size: 12px;
+  margin: 3px 0 0;
   color: var(--muted);
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .icon-btn {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  border: 1px solid var(--card-border);
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
   background: var(--card);
-  color: var(--muted);
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background var(--transition), color var(--transition);
-}
-
-.icon-btn:hover {
-  background: var(--card-border);
   color: var(--ink);
-}
-
-/* ==========================================================================
-   Main & Card / screen
-   ========================================================================== */
-main {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  width: 100%;
-  gap: 12px;
-  min-height: 0;
-  box-sizing: border-box;
+  font-size: 22px;
 }
 
 .screen {
   background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
-  padding: clamp(12px, 3.5vw, 16px);
-  box-shadow: var(--shadow);
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-  box-sizing: border-box;
-  min-height: 0;
-  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 14px;
+  box-shadow: 0 8px 30px #102b1610;
+}
+
+footer {
+  margin-top: auto;
+  text-align: center;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 12px 0 0;
 }
 
 /* ==========================================================================
-   Intro
+   Layar intro
    ========================================================================== */
 .intro h2 {
-  font-size: clamp(17px, 4.4vw, 20px);
-  font-weight: 800;
-  letter-spacing: -0.4px;
-  color: var(--ink);
+  font-size: 22px;
+  margin: 0 0 4px;
 }
 
 .intro p {
-  font-size: clamp(12px, 3.2vw, 13px);
+  font-size: 14px;
+  margin: 0 0 12px;
   color: var(--muted);
-  margin-top: 2px;
-  line-height: 1.35;
 }
 
 /* ==========================================================================
-   Viewfinder
+   Viewfinder kamera
    ========================================================================== */
 .viewfinder {
   position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  max-height: min(42vh, 340px);
-  border-radius: var(--radius-md);
   overflow: hidden;
-  background: #060e08;
-  border: 1px solid var(--card-border);
-  flex-shrink: 1;
-  margin: 0 auto;
+  aspect-ratio: 4 / 4.2;
+  background: #1d3327;
+  border-radius: 16px;
 }
 
 .viewfinder video {
@@ -236,7 +176,6 @@ main {
   display: block;
 }
 
-/* Placeholder */
 .camera-placeholder {
   position: absolute;
   inset: 0;
@@ -244,55 +183,70 @@ main {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  color: var(--muted);
-  background: #060e08;
   text-align: center;
-  padding: 24px;
-}
-
-.camera-emoji {
-  font-size: 44px;
-  opacity: 0.5;
-}
-
-.camera-placeholder strong {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ink);
-  opacity: 0.7;
+  color: #fff;
+  gap: 8px;
+  padding: 20px;
+  background: #1d3327;
 }
 
 .camera-placeholder small {
-  font-size: 12px;
-  color: var(--muted);
-  opacity: 0.6;
+  color: #d0e3d4;
 }
 
-/* Corner guide */
+.camera-emoji {
+  font-size: 40px;
+}
+
+/* Bingkai pemandu (4 sudut) */
 .guide {
   position: absolute;
-  inset: 14%;
-  pointer-events: none;
+  inset: 16% 12%;
   z-index: 2;
+  pointer-events: none;
 }
 
 .corner {
   position: absolute;
-  width: 28px;
-  height: 28px;
-  border-color: var(--green);
+  width: 34px;
+  height: 34px;
+  border-color: #c5ffb2;
   border-style: solid;
   border-width: 0;
-  opacity: 0.8;
 }
 
-.tl { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; border-radius: 6px 0 0; }
-.tr { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; border-radius: 0 6px 0; }
-.bl { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 6px; }
-.br { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 6px; }
+.tl {
+  top: 0;
+  left: 0;
+  border-top-width: 4px;
+  border-left-width: 4px;
+  border-radius: 8px 0 0;
+}
 
-/* Tip */
+.tr {
+  top: 0;
+  right: 0;
+  border-top-width: 4px;
+  border-right-width: 4px;
+  border-radius: 0 8px 0 0;
+}
+
+.bl {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 4px;
+  border-left-width: 4px;
+  border-radius: 0 0 0 8px;
+}
+
+.br {
+  bottom: 0;
+  right: 0;
+  border-bottom-width: 4px;
+  border-right-width: 4px;
+  border-radius: 0 0 8px;
+}
+
 .view-tip {
   position: absolute;
   bottom: 10px;
@@ -300,23 +254,18 @@ main {
   transform: translateX(-50%);
   z-index: 3;
   white-space: nowrap;
-  background: #06120855;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid #22c55e25;
-  color: #a7f3c0;
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 500;
+  background: #102519dd;
+  color: #fff;
+  padding: 7px 11px;
+  border-radius: 30px;
+  font-size: 12px;
 }
 
-/* Camera message */
 .camera-message {
-  font-size: 12px;
   color: var(--muted);
-  min-height: 16px;
-  text-align: center;
+  font-size: 13px;
+  margin: 10px 0;
+  min-height: 18px;
 }
 
 /* ==========================================================================
@@ -324,10 +273,8 @@ main {
    ========================================================================== */
 .actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: auto;
-  width: 100%;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
 }
 
 .actions .primary {
@@ -335,91 +282,52 @@ main {
 }
 
 .btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 48px;
-  border-radius: var(--radius-sm);
-  padding: 0 10px;
-  font-size: clamp(13px, 3.5vw, 15px);
+  min-height: 50px;
+  border-radius: 13px;
+  padding: 10px 12px;
+  font-size: 16px;
   font-weight: 700;
-  transition: all var(--transition);
-  cursor: pointer;
-  border: 1px solid transparent;
-  letter-spacing: -0.2px;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  border: 1px solid var(--border);
 }
 
 .primary {
-  background: linear-gradient(135deg, var(--green) 0%, var(--green-dim) 100%);
+  background: var(--green);
   color: var(--green-ink);
-  border-color: var(--green-dim);
-  box-shadow: 0 4px 20px var(--green-glow);
+  border-color: var(--green);
 }
-
-.primary:hover {
-  background: linear-gradient(135deg, #4ade80, var(--green));
-  box-shadow: 0 6px 28px #22c55e50;
-  transform: translateY(-1px);
-}
-
-.primary:active { transform: translateY(0); }
 
 .secondary {
-  background: var(--surface);
+  background: var(--soft);
   color: var(--ink);
-  border-color: var(--card-border);
-}
-
-.secondary:hover {
-  background: var(--card-border);
 }
 
 .subtle {
-  background: transparent;
+  background: var(--card);
   color: var(--green);
-  border-color: var(--card-border);
-}
-
-.subtle:hover {
-  background: var(--green-glow);
-  border-color: #22c55e40;
 }
 
 .btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  transform: none !important;
+  opacity: 0.5;
+  cursor: wait;
 }
 
 /* ==========================================================================
    Layar hasil
    ========================================================================== */
 .result-screen {
-  text-align: center;
-}
-
-#outcome {
+  min-height: 420px;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 8px;
-  width: 100%;
+  text-align: center;
 }
 
 .result-photo {
   width: 100%;
-  max-width: 300px;
-  height: clamp(120px, 20vh, 160px);
-  margin: 0 auto;
-  border-radius: var(--radius-md);
+  height: 128px;
   overflow: hidden;
-  background: var(--surface);
-  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: var(--soft);
 }
 
 .result-photo img {
@@ -429,57 +337,47 @@ main {
 }
 
 .type {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  margin-top: 2px;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 2px 0;
 }
 
 .score {
-  font-size: clamp(48px, 14vw, 72px);
-  font-weight: 900;
+  font-size: clamp(48px, 12vw, 66px);
+  font-weight: 800;
   letter-spacing: -2px;
-  line-height: 1;
-  color: var(--ink);
-  background: linear-gradient(135deg, var(--ink), var(--green));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  line-height: 1.05;
 }
 
 .category {
-  font-size: clamp(16px, 4.5vw, 18px);
+  font-size: 20px;
   font-weight: 800;
-  letter-spacing: -0.3px;
+  margin: 0;
 }
 
-.category.good { color: var(--green); }
-.category.warn { color: var(--warning); }
-.category.bad  { color: var(--danger); }
+.category.good {
+  color: var(--green);
+}
+
+.category.warn {
+  color: var(--warning);
+}
+
+.category.bad {
+  color: var(--danger);
+}
 
 .extra {
   white-space: pre-line;
-  font-size: clamp(12px, 3.2vw, 13px);
-  line-height: 1.5;
-  color: var(--muted);
-  background: var(--surface);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  text-align: left;
-  width: 100%;
-  box-sizing: border-box;
-  word-break: break-word;
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 4px 0;
 }
 
-.extra:empty { display: none; }
-
 .disclaimer {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
-  opacity: 0.6;
+  margin: 0;
 }
 
 .again {
@@ -488,171 +386,422 @@ main {
 }
 
 /* ==========================================================================
-   Loading
+   Layar loading
    ========================================================================== */
-#loading {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 40px 0;
-}
-
 .spinner {
-  width: 48px;
-  height: 48px;
-  border: 3px solid var(--card-border);
+  width: 52px;
+  height: 52px;
+  margin: 70px auto 20px;
+  border: 5px solid var(--border);
   border-top-color: var(--green);
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
 #loading h2 {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--ink);
+  font-size: 22px;
 }
 
 #loading p {
-  font-size: 13px;
   color: var(--muted);
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 /* ==========================================================================
    Dialog
    ========================================================================== */
 dialog {
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
+  border: 0;
+  border-radius: 20px;
   padding: 0;
-  max-width: min(92vw, 440px);
-  width: 100%;
+  max-width: min(92vw, 460px);
   color: var(--ink);
   background: var(--card);
-  box-shadow: var(--shadow);
 }
 
 dialog::backdrop {
-  background: #00000090;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: #102519aa;
 }
 
-.dialog-content { padding: 20px; }
+.dialog-content {
+  padding: 20px;
+}
 
 .dialog-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  gap: 8px;
 }
 
 .dialog-head h2 {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: 21px;
 }
 
-.dialog-content p, .dialog-content li {
-  font-size: 14px;
-  color: var(--muted);
-  margin-top: 6px;
-  line-height: 1.6;
+.dialog-content p {
+  font-size: 15px;
 }
 
 .dialog-content h3 {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink);
-  margin-top: 16px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* ==========================================================================
-   Footer
-   ========================================================================== */
-footer {
-  text-align: center;
-  font-size: 11px;
-  color: var(--muted);
-  opacity: 0.5;
-  padding: 4px 0;
+  font-size: 17px;
 }
 
 /* ==========================================================================
    Responsif
    ========================================================================== */
-/* Layar HP ramping / sempit (<= 360px seperti iPhone SE, Galaxy Z Flip, dsb) */
-@media (max-width: 360px) {
+@media (max-height: 700px) {
   .app {
-    padding-left: 8px;
-    padding-right: 8px;
-    gap: 8px;
+    padding-top: calc(5px + env(safe-area-inset-top));
+  }
+
+  .top {
+    margin-bottom: 6px;
   }
 
   .screen {
     padding: 10px;
-    border-radius: var(--radius-md);
-    gap: 8px;
   }
 
-  .actions {
-    grid-template-columns: 1fr;
-    gap: 6px;
+  .intro h2 {
+    font-size: 19px;
   }
 
-  .actions .primary {
-    grid-column: 1;
+  .intro p {
+    margin-bottom: 7px;
   }
 
-  .btn {
-    height: 44px;
-    font-size: 13.5px;
-  }
-}
-
-/* Layar HP pendek / tinggi terbatas */
-@media (max-height: 700px) {
   .viewfinder {
-    aspect-ratio: 4 / 3;
-    max-height: 35vh;
+    aspect-ratio: 4 / 3.3;
   }
 
-  .screen {
-    padding: 10px 12px;
-    gap: 8px;
+  .camera-message {
+    margin: 6px 0;
   }
 
   .btn {
-    height: 42px;
-    font-size: 13.5px;
+    min-height: 48px;
+  }
+
+  .result-screen {
+    min-height: 0;
   }
 
   .result-photo {
-    height: 110px;
+    height: 95px;
   }
 
-  .score {
-    font-size: 46px;
+  .extra {
+    font-size: 13px;
   }
 }
 
-@media (min-width: 520px) {
+@media (min-width: 700px) {
   .app {
-    padding-top: calc(env(safe-area-inset-top) + 24px);
+    padding-top: 32px;
+  }
+
+  .viewfinder {
+    aspect-ratio: 4 / 3.5;
+  }
+}
+
+
+/* ==========================================================================
+   Mode gelap
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0d1117;
+    --card: #161b22;
+    --ink: #e6edf3;
+    --muted: #b1bec9;
+    --green: #49df75;
+    --green-ink: #07190e;
+    --border: #3a4852;
+    --soft: #24372d;
+    --warning: #f4c46b;
+    --danger: #ff8888;
+  }
+
+  .camera-placeholder {
+    background: #1d3327;
   }
 }
 
 /* ==========================================================================
-   Reduced motion
+   Aksesibilitas: kurangi animasi
    ========================================================================== */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+
+/* HASIL SCAN FULL HEIGHT MOBILE */
+
+@media screen and (max-width: 480px) {
+
+  .app {
+    min-height: 100dvh;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Konten utama memenuhi sisa tinggi layar */
+  .app > main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Kartu hasil memanjang ke bawah */
+  #result-section {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Hasil prediksi tetap di bagian atas */
+  #outcome {
+    flex-shrink: 0;
+  }
+
+  /* Tombol Scan Lagi berada di bagian bawah kartu */
+  #btn-again {
+    margin-top: auto;
+    width: 100%;
+  }
+
+  /* Footer berada setelah kartu hasil */
+  .app > footer {
+    margin-top: 12px;
+    padding-bottom: 12px;
+  }
+}
+
+/* Memberikan jarak pada deskripsi hasil AI */
+.extra {
+  margin-top: 20px;
+  line-height: 1.6;
+}
+
+/* Jarak disclaimer */
+.disclaimer {
+  margin-top: 14px;
+}
+
+/* Elemen tersembunyi tetap tersembunyi */
+[hidden] {
+  display: none !important;
+}
+
+
+/* Posisi deskripsi hasil di tengah kartu */
+@media screen and (max-width: 480px) {
+
+  /* Area hasil mengisi ruang di atas tombol */
+  #result-section #outcome {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* Deskripsi AI berada lebih ke tengah */
+  #result-section .extra {
+    margin-top: auto;
+    padding-top: 16px;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  /* Catatan berada di bawah deskripsi */
+  #result-section .disclaimer {
+    margin-top: 14px;
+    margin-bottom: auto;
+    text-align: center;
+  }
+
+  /* Tombol tetap di bagian bawah kartu */
+  #result-section #btn-again {
+    margin-top: 12px;
+    flex-shrink: 0;
+    width: 100%;
+  }
+}
+
+
+
+/* HASIL PREDIKSI RAPI DAN BERKELOMPOK */
+
+/* HASIL PREDIKSI BERKELOMPOK DI TENGAH */
+@media screen and (max-width: 480px) {
+
+  #result-section {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  #result-section #outcome {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* Foto tetap berada di atas */
+  #result-section .result-photo {
+    flex-shrink: 0;
+  }
+
+  /* Jenis sayur ikut berada di tengah */
+  #result-section #jenis {
+    margin-top: auto;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  /* Persentase berada di bawah jenis sayur */
+  #result-section #skor {
+    margin-top: 0;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+
+  /* Status kesegaran */
+  #result-section #label {
+    margin: 0;
+    text-align: center;
+  }
+
+  /* Deskripsi AI */
+  #result-section #extra {
+    margin-top: 16px;
+    padding-top: 0;
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  /* Catatan hasil */
+  #result-section #disclaimer {
+    margin-top: 12px;
+    margin-bottom: auto;
+    text-align: center;
+  }
+
+  /* Tombol tetap di bawah */
+  #result-section #btn-again {
+    margin-top: 12px;
+    width: 100%;
+    flex-shrink: 0;
+  }
+}
+
+
+/* Memperbesar foto hasil scan pada HP */
+@media screen and (max-width: 480px) {
+
+  #result-section .result-photo {
+    width: 100%;
+    height: 220px;
+    overflow: hidden;
+    border-radius: 14px;
+    flex-shrink: 0;
+  }
+
+  #result-section .result-photo img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+  }
+}
+
+
+
+/* Ikon kamera utama */
+#camera-placeholder .camera-icon {
+  width: 48px;
+  height: 48px;
+  max-width: 48px;
+  max-height: 48px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+/* Tombol Kamera HP */
+.actions #btn-native {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Perkecil ikon Kamera HP */
+.actions #btn-native .camera-icon-small {
+  display: block;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  max-width: 20px;
+  min-height: 20px;
+  max-height: 20px;
+  flex: 0 0 20px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+
+/* Merapikan tombol Kamera HP */
+#btn-native {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Memperkecil ikon kamera */
+#btn-native img {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px;
+  max-width: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+
+  /* Mengubah ikon hitam menjadi putih */
+  filter: brightness(0) invert(1);
+}
+
+
+/* Mengubah ikon kamera utama menjadi putih */
+#camera-placeholder .camera-icon {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+}
+
+/* Jika gambar belum memakai class camera-icon */
+#camera-placeholder .camera-emoji img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
 }

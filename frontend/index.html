@@ -4,36 +4,37 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0a0f0b">
-  <meta name="description" content="Cek kesegaran sayur dari foto menggunakan AI — SegerScan">
+  <meta name="theme-color" content="#f6faf5">
+  <meta name="description" content="Cek kesegaran sayur dari foto">
   <title>SegerScan — Cek Kesegaran Sayur</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
   <div class="app">
-
-    <!-- Header -->
     <header class="top">
       <div class="brand">
-        <div class="logo" aria-hidden="true">🥬</div>
-        <div>
-          <h1>SegarScan</h1>
-          <p>Cek kesagaran sayur dari foto</p>
+        <span class="logo" aria-hidden="true"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYA
+          AAAeP4ixAAAACXBIWXMAAAsTAAALEwEAmpwYAAACVElEQVR4nO2Yy2oUQRSGPxeKl4wkiglkqWLmHdQR8iIyxowL3YloHkRfQkJ05yVekhFDjBsFo27E
+          ywMYyaC7tBz5Gwqmp28z01MT64OChlOX/586daarIbD/OQ60gIfAN+CPmj0/ABaBGh5zALgB/ASijGZ9rmuMV5wCHjtCXwNN4DRwWO0McAXYcPo90lgvqA
+          FvJew70Mgx5pL62pitqlJtSr+u5fcnoAP8At4Bd4EXEvQKOFFg3pPauUhz2FzvNXdHa61obdNQmiPAErCTI+ftIE+XWGNGY/OcqTtK0ULMasvjiSz/rwJzwD
+          G1OVWge3ouS11z2Fzu/HWt+cTR8UbacpuI89e29wKj56K0xOdwNk86bTl5O4k/TAIvpW0zK82W1PGjZyZi7NB/lsbbpHSKD7YP6ZR
+          WuuMCkFjNms7B9p2n0no5Kbii4AL+syity0nBOPf6
+          KaVVUXeqahe7Ck7gPxPSapq7+K3gUcbHSCcp+FXBs/jPOWn9khRcTqsEntGU1vtJwZaCVtp857m02rtYFzW9Qu8B5/GX
+          hkzspBWmW05Z8/0V5WZax4O6IFnHNc/MTAFtaWtLa+ZlZ9vZmTxX12HTcHbiQ5F7vl1Dn2mgnZlVYJ7qmdfae9KyWvA6/Q/7
+          VHMN+JH2Lzpkdp3LVKvfz0eHnKtmL9Z0IRtkDGdd0zAQsoykxcvG8sQLE4wwZkbawHqJsWnjRmIkjSyxw1q3mglzEgUjPQ
+          hG+iQKRnoQjbgNjH1npGqiYKQHwUifRMHI/2IkGvfy2x6hifVBGglQEX8BYg+GAJ8mSzMAAAAASUVORK5CYII=" alt="chef-hat"></span>
+        <div> 
+          <h1>SegerScan</h1>
+          <p>Cek Bahan Dapurmu</p>
         </div>
       </div>
       <button type="button" id="btn-info" class="icon-btn" aria-label="Informasi penggunaan" aria-haspopup="dialog"
-        aria-controls="info-dialog">
-        ⓘ
-      </button>
+        aria-controls="info-dialog">ⓘ</button>
     </header>
 
-    <!-- Layar kamera -->
     <main>
       <section id="camera-section" class="screen" aria-label="Ambil foto sayur">
-
         <div class="intro">
           <h2>Periksa sayurmu</h2>
           <p>Dekatkan ke satu jenis sayur. Pastikan cahaya cukup.</p>
@@ -48,7 +49,7 @@
             <span class="corner br"></span>
           </div>
           <div id="camera-placeholder" class="camera-placeholder">
-            <span class="camera-emoji" aria-hidden="true">📷</span>
+            <span class="camera-emoji" aria-hidden="true"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAACXBIWXMAAAsTAAALEwEAmpwYAAADLklEQVR4nO2Yy0tVURTGf4gNyqsF2UShUabQIMsaRo+BJUGlf0R/QA97QfR0WmnNKhs6CUJHeQ0icRBkNeo1KwMHUeYzMG83VnxXdnKv59zzuLcb54MN57HXt9d39trrrL0hQYIE5cBa4ALwDlgCsj7bkmzOi6OsWAc8LcL5Qm0MqC2nkDtyZBI4DFQXYVstm0lx3A7rzJjH1xotYLcZWAR+AttDjN8qjkVxBoafqc+Hi3o3QHgMiMs4A8X3cQ9n/YhsJzza8/DOAS+BK8CmQob7gE+O0fMC/UY9RDwDqiIQUiWuQuNMA10rjQ4qHq3DQ2BPkYu0VKjRB38kXzNAZ+5lPfBFL05QOTgjn79LA5f04EmMgzZr4BHgrWJ9TtdpoBvYGoB3UL5ftpvXutnrdLBc/hmYADpCCGiT835/giOy8Yv9srMEwLxuLP5ymHDILQEUC1tffcAvcXwF7gJHNDs1anZ9FLinPlnZ9Ppco7WymaFAqg0jZIPCNKuPdBWo82Fnfa4BC87sGJcXlv3PJ6RDYkzEoSJErHFEmO0Oikeb8yHTPmZmVSFB0eeIaAjB0+CIuVlqIW2K7/mAM7ESOxVmGQ++yIXkspOtiahwXZzDpRLS7GQnPwvbL9YD38TdVAohZ8VhKTZq3Bf36VIISYvD/glRo9MjvCIV8kEcW4gezeK2vXzsQmbFkSJ6pMRtY8QuZCZGIXXO/iN2Ie/FEaSC9UKLuK1S/i8W++NSCOkWh1WxUeOBuE8WeJ/8EL1KFCvFo0KPR1jFWjQuqOALi13ADxWNdmBX0jK+V1xWgjeG4Gl0yvgbHn1jEVLthJjt+XcH4GgFPpZ7Y4W2p7l0vKBS3BatF6xPj8IpV1uF3uqGhX3FW4rvrDJPP3BMP7iUWov+E/1OdsoonPweEC77H2d5sQ0YcgbzaukiE8Vf5csr3dhRZFxo0n5iWKXGrNobpdZTASvnA/J9HJ1sZ3WeWmkYku92WvrneH5aD+xYs1JwTj5PARtzD7uchTmoo8g41kxYpBROuZnI5CtUO3Wyna2QNrVatV2vk+1xZ9f3L7UZ4IXWxHI4JUiQIAEVh98dtOAQqp4M3gAAAABJRU5ErkJggg==" alt="camera--v1"></span>
             <strong>Kamera belum dinyalakan</strong>
             <small>Foto hanya digunakan untuk pemeriksaan.</small>
           </div>
@@ -56,13 +57,17 @@
         </div>
 
         <p id="camera-message" class="camera-message" role="status">
-          Kami butuh kamera untuk memotret sayur. Foto dikirim untuk dinilai, tidak disimpan di perangkat.
+          Kami butuh kamera untuk memotret sayur. Foto dikirim untuk dinilai, tidak disimpan di perangkat oleh
+          SegerScan.
         </p>
 
         <div class="actions">
           <button type="button" id="btn-start" class="btn primary">Nyalakan Kamera</button>
           <button type="button" id="btn-capture" class="btn primary" hidden>📸 Ambil Foto</button>
-          <button type="button" id="btn-native" class="btn secondary">📷 Kamera HP</button>
+          <button type="button" id="btn-native" class="btn secondary">
+          <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAACXBIWXMAAAsTAAALEwEAmpwYAAADLklEQVR4nO2Yy0tVURTGf4gNyqsF2UShUabQIMsaRo+BJUGlf0R/QA97QfR0WmnNKhs6CUJHeQ0icRBkNeo1KwMHUeYzMG83VnxXdnKv59zzuLcb54MN57HXt9d39trrrL0hQYIE5cBa4ALwDlgCsj7bkmzOi6OsWAc8LcL5Qm0MqC2nkDtyZBI4DFQXYVstm0lx3A7rzJjH1xotYLcZWAR+AttDjN8qjkVxBoafqc+Hi3o3QHgMiMs4A8X3cQ9n/YhsJzza8/DOAS+BK8CmQob7gE+O0fMC/UY9RDwDqiIQUiWuQuNMA10rjQ4qHq3DQ2BPkYu0VKjRB38kXzNAZ+5lPfBFL05QOTgjn79LA5f04EmMgzZr4BHgrWJ9TtdpoBvYGoB3UL5ftpvXutnrdLBc/hmYADpCCGiT835/giOy8Yv9srMEwLxuLP5ymHDILQEUC1tffcAvcXwF7gJHNDs1anZ9FLinPlnZ9Ppco7WymaFAqg0jZIPCNKuPdBWo82Fnfa4BC87sGJcXlv3PJ6RDYkzEoSJErHFEmO0Oikeb8yHTPmZmVSFB0eeIaAjB0+CIuVlqIW2K7/mAM7ESOxVmGQ++yIXkspOtiahwXZzDpRLS7GQnPwvbL9YD38TdVAohZ8VhKTZq3Bf36VIISYvD/glRo9MjvCIV8kEcW4gezeK2vXzsQmbFkSJ6pMRtY8QuZCZGIXXO/iN2Ie/FEaSC9UKLuK1S/i8W++NSCOkWh1WxUeOBuE8WeJ/8EL1KFCvFo0KPR1jFWjQuqOALi13ADxWNdmBX0jK+V1xWgjeG4Gl0yvgbHn1jEVLthJjt+XcH4GgFPpZ7Y4W2p7l0vKBS3BatF6xPj8IpV1uF3uqGhX3FW4rvrDJPP3BMP7iUWov+E/1OdsoonPweEC77H2d5sQ0YcgbzaukiE8Vf5csr3dhRZFxo0n5iWKXGrNobpdZTASvnA/J9HJ1sZ3WeWmkYku92WvrneH5aD+xYs1JwTj5PARtzD7uchTmoo8g41kxYpBROuZnI5CtUO3Wyna2QNrVatV2vk+1xZ9f3L7UZ4IXWxHI4JUiQIAEVh98dtOAQqp4M3gAAAABJRU5ErkJggg==" alt="camera--v1">
+            Kamera HP
+          </button>
           <button type="button" id="btn-upload" class="btn subtle">Pilih dari Galeri</button>
         </div>
 
@@ -70,13 +75,10 @@
         <input type="file" id="native-input" accept="image/*" capture="environment"
           aria-label="Ambil foto menggunakan kamera HP" hidden>
         <canvas id="canvas" hidden></canvas>
-
       </section>
 
-      <!-- Layar hasil -->
       <section id="result-section" class="screen result-screen" hidden aria-live="polite" aria-atomic="true"
         aria-label="Hasil pemeriksaan sayur">
-
         <div id="loading" hidden role="status">
           <div class="spinner" aria-hidden="true"></div>
           <h2>Sedang menilai…</h2>
@@ -97,14 +99,12 @@
         </div>
 
         <button type="button" id="btn-again" class="btn primary again">Scan Lagi</button>
-
       </section>
     </main>
 
     <footer>SegerScan • Perkiraan berbasis foto, bukan jaminan keamanan pangan</footer>
   </div>
 
-  <!-- Dialog info -->
   <dialog id="info-dialog" aria-labelledby="info-title">
     <div class="dialog-content">
       <div class="dialog-head">
@@ -119,6 +119,7 @@
       <p>
         Foto dikirim ke layanan penilai melalui server SegerScan.
         SegerScan tidak menyimpan foto di penyimpanan browser.
+        Kebijakan penyimpanan layanan pihak ketiga perlu dikonfirmasi oleh tim.
       </p>
 
       <h3>Catatan</h3>
@@ -126,8 +127,8 @@
     </div>
   </dialog>
 
-  <script src="js/camera.js?v=2" defer></script>
-  <script src="js/app.js?v=2" defer></script>
+  <script src="js/camera.js" defer></script>
+  <script src="js/app.js" defer></script>
 </body>
 
 </html>
