@@ -5,6 +5,7 @@ import threading
 import time
 
 import numpy as np
+import pytest
 from PIL import Image
 
 from backend.app.services import gambar, inference, vlm
@@ -58,26 +59,27 @@ def _foto_tajam():
     return Image.fromarray(rng.integers(0, 255, (200, 200, 3)).astype("uint8"))
 
 
-def test_antrean_gemini_penuh_pakai_cadangan(monkeypatch):
-    monkeypatch.setenv("GEMINI_API_KEY", "x")
-    monkeypatch.setattr(inference, "_gate", threading.BoundedSemaphore(1))
-    monkeypatch.setattr(inference, "GATE_TUNGGU", 0.1)
+def test_antrean_gemini_penuh_tidak_tersedia(monkeypatch):
+    monkeypatch.setattr(vlm, "tersedia", lambda: True)
+    gate = threading.BoundedSemaphore(1)
+    monkeypatch.setattr(inference, "_gate", gate)
+    monkeypatch.setattr(inference, "GATE_TUNGGU", 0)
 
-    def lambat(im, deadline=None):
-        time.sleep(0.6)
+    def nilai(im, deadline=None):
         return {"valid": True, "jenis": "bayam", "skor": 85.0, "skor_min": 80.0,
                 "skor_maks": 90.0, "keyakinan": "tinggi", "ciri": "", "model": "x"}
 
-    monkeypatch.setattr(vlm, "nilai", lambat)
-    svc = InferenceService("tidak_ada.pt")
-    svc.model, svc._predict_lokal = object(), (lambda im, m: 30.0)
+    monkeypatch.setattr(vlm, "nilai", nilai)
+    svc = InferenceService()
+    foto = _foto_tajam()
 
-    hasil = {}
-    t = threading.Thread(target=lambda: hasil.setdefault("a", svc.predict(_foto_tajam())))
-    t.start()
-    time.sleep(0.15)                       # permintaan pertama sedang memegang giliran
-    kedua = svc.predict(_foto_tajam())     # permintaan kedua tidak kebagian
-    t.join()
+    # Simulasikan seluruh slot sedang dipakai permintaan lain.
+    gate.acquire()
+    try:
+        with pytest.raises(RuntimeError, match="Tidak ada penilai yang tersedia"):
+            svc.predict(foto)
+    finally:
+        gate.release()
 
-    assert hasil["a"]["sumber"] == "gemini"
-    assert kedua["sumber"] == "model_lokal"
+    # Setelah slot tersedia lagi, Gemini dapat melayani permintaan.
+    assert svc.predict(foto)["sumber"] == "gemini"

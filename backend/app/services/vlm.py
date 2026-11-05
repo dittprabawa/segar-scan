@@ -26,6 +26,7 @@ Balas HANYA JSON dengan kunci persis ini:
 
 Aturan:
 - valid=false jika gambar bukan sayuran, gelap, buram, atau berisi beberapa jenis sayur campur. Jangan beri skor jika valid=false.
+- valid=false jika pencahayaan terlalu terang atau silau sehingga warna asli, tekstur, atau bercak pada sayuran tidak bisa dinilai. Sayuran yang masih bisa dikenali belum tentu bisa dinilai kesegarannya. Latar putih saja bukan alasan menolak jika detail sayur tetap jelas.
 - Skor: 80-100 sangat segar, 60-79 segar, 40-59 segera olah, 20-39 layu, 0-19 tidak layak.
 - Nilai dari warna, kelayuan, bercak/lendir, kilap, dan kerusakan fisik.
 - Rentang skor_min sampai skor_maks harus mencerminkan ketidakpastianmu (lebar 10-20 poin).

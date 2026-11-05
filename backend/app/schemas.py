@@ -16,4 +16,4 @@ class PredictionResponse(BaseModel):
     saran: Optional[str] = None
     ciri: Optional[str] = None
     alasan: Optional[str] = Field(None, description="Alasan jika foto ditolak")
-    sumber: Optional[str] = Field(None, description="gemini atau model_lokal")
+    sumber: Optional[str] = Field(None, description="model_gemini")

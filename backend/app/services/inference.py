@@ -1,4 +1,4 @@
-"""Layanan inferensi: cek kualitas -> Gemini -> cadangan model lokal."""
+"""Layanan inferensi: cek kualitas -> Gemini."""
 
 import logging
 import os
@@ -19,25 +19,13 @@ _gate = threading.BoundedSemaphore(MAX_GEMINI_BERSAMAAN)
 
 
 class InferenceService:
-    def __init__(self, weights_path: Optional[str] = None):
-        weights_path = weights_path or os.getenv("MODEL_PATH", "models/segarscan.pt")
+    def __init__(self):
+        # Dipakai endpoint health; inferensi hanya menggunakan Gemini.
         self.model = None
-        self._predict_lokal = None
-        self.nama_model_lokal: Optional[str] = None
-        # Model lokal bersifat opsional: server tetap jalan walau torch/ml/model tidak ada
-        if os.path.exists(weights_path):
-            try:
-                from ml.predict import load_model, predict
-
-                self.model = load_model(weights_path)
-                self._predict_lokal = predict
-                self.nama_model_lokal = os.path.basename(weights_path)
-            except Exception as e:
-                log.warning("Model lokal tidak dimuat: %s", e)
 
     @property
     def siap(self) -> bool:
-        return self.model is not None or vlm.tersedia()
+        return vlm.tersedia()
 
     def predict(self, image: Image.Image) -> dict:
         alasan = quality.cek_kualitas(image)
@@ -59,18 +47,11 @@ class InferenceService:
                         model=nama_model,
                     )
                 except Exception as e:  # semua model gagal / waktu habis
-                    log.warning("Gemini gagal, pindah ke model lokal: %s", str(e)[:200])
+                    log.warning("Gemini gagal atau timeout: %s", str(e)[:200])
                 finally:
                     _gate.release()
             else:
-                log.warning("Antrean Gemini penuh, memakai cadangan")
-
-        if self.model is not None and self._predict_lokal is not None:
-            skor = self._predict_lokal(image, self.model)
-            return self._ok(skor, "unknown", "model_lokal",
-                            (max(0.0, skor - 15), min(100.0, skor + 15)), "rendah", "",
-                            model=self.nama_model_lokal)
-
+                log.warning("Antrean Gemini penuh")
         raise RuntimeError("Tidak ada penilai yang tersedia")
 
     # --- pembantu -----------------------------------------------------
