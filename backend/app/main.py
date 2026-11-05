@@ -2,6 +2,9 @@
 
 import os
 from pathlib import Path
+import logging
+
+log = logging.getLogger("segarscan")
 
 from dotenv import load_dotenv
 
@@ -40,6 +43,21 @@ app.add_middleware(
 
 service = InferenceService()
 
+@app.exception_handler(Exception)
+async def unexpected_error_handler(request: Request, exc: Exception):
+    # Catat jenis error tanpa menyalin pesan yang mungkin berisi rahasia.
+    log.error(
+        "Error tak terduga: method=%s path=%s type=%s",
+        request.method,
+        request.url.path,
+        type(exc).__name__,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Terjadi gangguan pada server. Coba lagi sebentar."
+        },
+    )
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request, exc):
@@ -78,8 +96,6 @@ def health():
 @app.post("/predict", response_model=PredictionResponse)
 @limiter.limit(RATE_LIMIT)  # harus di bawah @app.post, dan butuh parameter `request`
 def predict(request: Request, file: UploadFile = File(...)):
-    # Sengaja `def` (bukan `async def`): FastAPI menjalankannya di thread pool,
-    # sehingga menunggu Gemini tidak memblokir permintaan pengguna lain.
     siap = getattr(service, "siap", service.model is not None)
     if not siap:
         raise HTTPException(status_code=503, detail="Model belum tersedia")
@@ -104,7 +120,11 @@ def predict(request: Request, file: UploadFile = File(...)):
     try:
         return service.predict(image)
     except RuntimeError:
-        raise HTTPException(status_code=503, detail="Penilai sedang tidak tersedia")
+        raise HTTPException(
+            status_code=503,
+            detail="Penilai sedang tidak tersedia. Coba lagi sebentar.",
+            headers={"Retry-After": "30"},
+        )
 
 
 # Taruh paling bawah: menyajikan frontend dari server yang sama
