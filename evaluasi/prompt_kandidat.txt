@@ -1,0 +1,5 @@
+Panduan tambahan identifikasi jenis:
+- Identifikasi jenis sebelum menilai kesegaran. Periksa bentuk daun, tepi daun, susunan daun, tangkai, dan batang yang benar-benar terlihat; jangan menyimpulkan jenis hanya dari warna hijau atau konteks pasar.
+- Bila ada beberapa kemungkinan (misalnya bayam dan caisim), bandingkan ciri yang terlihat dan jangan mengarang ciri yang tertutup atau tidak tampak.
+- Jika foto tidak menyediakan ciri pembeda yang cukup untuk menentukan jenis, balas valid=false dengan alasan meminta foto seluruh daun dan batang yang lebih jelas; jangan menebak jenis.
+- Gunakan nama jenis sayur dalam bahasa Indonesia secara konsisten. Tingkat keyakinan harus mencerminkan ketidakpastian identifikasi maupun kesegaran.

@@ -131,7 +131,7 @@ Foto yang tidak layak dinilai mendapat HTTP 200 dengan `status: "ditolak"`, skor
 | 413 | File terlalu besar atau jumlah piksel melebihi batas |
 | 422 | Field unggahan tidak sesuai, misalnya `file` tidak dikirim |
 | 429 | Rate limit terlampaui; disertai `Retry-After: 60` |
-| 503 | Penilai tidak tersedia atau gagal; saat ini belum disertai `Retry-After` |
+| 503 | Penilai tidak tersedia atau gagal; disertai `Retry-After: 30` |
 
 Error yang ditangani aplikasi menggunakan bentuk `{"detail": "pesan"}`. Error tak terduga atau error dari platform hosting belum tentu mengikuti bentuk tersebut.
 
@@ -142,6 +142,8 @@ Contoh ketika Gemini diaktifkan dan kunci terisi:
 ```json
 {
   "status": "ok",
+  "versi": "1.2.0",
+  "versi_prompt": "p1",
   "gemini": true,
   "model_lokal": false,
   "siap": true
@@ -149,6 +151,8 @@ Contoh ketika Gemini diaktifkan dan kunci terisi:
 ```
 
 `gemini: true` hanya menunjukkan konfigurasi kunci terisi dan Gemini diaktifkan; endpoint ini tidak menguji validitas kunci, kuota, atau koneksi. Field `model_lokal` masih dipertahankan untuk kompatibilitas dan bernilai `false`.
+
+`versi` berasal dari versi aplikasi FastAPI, sama dengan dokumentasi OpenAPI. `versi_prompt` berasal dari `PROMPT_VERSION` di `backend/app/services/vlm.py`; `p1` menandai prompt saat ini. Naikkan nilainya setiap kali isi prompt diubah. Endpoint ini tidak memanggil Gemini atau mengembalikan kunci API.
 
 ## Deployment dan operasi Vercel
 
@@ -180,7 +184,7 @@ python -m pytest -q
 
 Tes saat ini tidak memanggil Gemini sungguhan. Cakupannya meliputi foto gelap, buram, terlalu terang, objek dengan latar putih, orientasi EXIF, batas piksel, file bukan gambar, perhitungan sisa waktu, serta antrean Gemini penuh dan pemulihan slot.
 
-Tes endpoint lengkap untuk kode HTTP, rate limit, dan kegagalan Gemini masih perlu ditambahkan. Tes yang lolos belum membuktikan akurasi prediksi, target kecepatan, atau perilaku deployment.
+Tes API mencakup prediksi sukses, penolakan Gemini dan filter kualitas, kegagalan/timeout Gemini, penilai nonaktif, HTTP 400/413/422/429/503, handler 500, serta kesiapan dan versi pada `/health`. Rate limiter direset antartes; pengujian 429 mengirim permintaan sampai batas aktual tercapai. Respons 429 dan 503 diperiksa header `Retry-After`-nya. Tes yang lolos belum membuktikan akurasi prediksi, target kecepatan, atau perilaku deployment.
 
 ## Penanganan masalah
 
@@ -222,7 +226,7 @@ Folder `ml/`, bobot dalam `models/`, dan berkas terkait training yang masih ters
 
 - Batasi CORS ke frontend yang diizinkan dan verifikasi IP asli di Vercel.
 - Perketat deadline total, lengkapi error, dan tambah pengujian API/beban.
-- Tambahkan log berstruktur, versi aplikasi di `/health`, dan versi prompt.
+- Tambahkan log berstruktur dan sertakan versi prompt pada log serta keluaran evaluasi.
 - Evaluasi Gemini terhadap penilaian manusia melalui CSV dan metrik akurasi.
 - Kalibrasi ambang kualitas dengan kumpulan foto dari beberapa HP.
 - Audit penanganan kunci dan privasi, termasuk perilaku unggahan sementara pada framework/hosting.

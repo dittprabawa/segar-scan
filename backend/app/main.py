@@ -1,6 +1,7 @@
 """SegerScan FastAPI Backend."""
 
 import os
+import time
 from pathlib import Path
 import logging
 
@@ -23,6 +24,7 @@ from backend.app.schemas import PredictionResponse  # noqa: E402
 from backend.app.services import vlm  # noqa: E402
 from backend.app.services.gambar import BukanGambar, TerlaluBesar, buka_gambar  # noqa: E402
 from backend.app.services.inference import InferenceService  # noqa: E402
+from backend.app.services.statistik import Statistik  # noqa: E402
 
 MAKS_BYTES = 5 * 1024 * 1024  # 5 MB
 RATE_LIMIT = os.getenv("RATE_LIMIT", "10/minute")  # per IP
@@ -42,6 +44,26 @@ app.add_middleware(
 )
 
 service = InferenceService()
+app.state.statistik = Statistik()
+
+
+@app.middleware("http")
+async def catat_statistik(request: Request, call_next):
+    if request.method != "POST" or request.url.path != "/predict":
+        return await call_next(request)
+    mulai = time.perf_counter()
+    status = 500
+    try:
+        response = await call_next(request)
+        status = response.status_code
+        return response
+    finally:
+        app.state.statistik.catat(
+            (time.perf_counter() - mulai) * 1000,
+            ditolak=status == 200 and getattr(request.state, "ditolak", False),
+            error=status >= 400,
+        )
+
 
 @app.exception_handler(Exception)
 async def unexpected_error_handler(request: Request, exc: Exception):
@@ -84,9 +106,12 @@ def root():
 
 @app.get("/health")
 def health():
-    """Cek status server, ketersediaan Gemini, dan model lokal."""
+    """Laporkan kesiapan konfigurasi dan versi tanpa memanggil Gemini."""
     return {
         "status": "ok",
+        "versi": app.version,
+        "versi_prompt": vlm.PROMPT_VERSION,
+        "statistik": app.state.statistik.ringkasan(),
         "gemini": vlm.tersedia(),
         "model_lokal": service.model is not None,
         "siap": service.siap,
@@ -98,7 +123,11 @@ def health():
 def predict(request: Request, file: UploadFile = File(...)):
     siap = getattr(service, "siap", service.model is not None)
     if not siap:
-        raise HTTPException(status_code=503, detail="Model belum tersedia")
+        raise HTTPException(
+            status_code=503,
+            detail="Model belum tersedia",
+            headers={"Retry-After": "30"},
+        )
 
     # Tolak lebih awal bila ukuran yang diumumkan sudah kebesaran
     cl = request.headers.get("content-length")
@@ -118,7 +147,9 @@ def predict(request: Request, file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="File bukan gambar yang valid")
 
     try:
-        return service.predict(image)
+        hasil = service.predict(image)
+        request.state.ditolak = hasil.get("status") == "ditolak"
+        return hasil
     except RuntimeError:
         raise HTTPException(
             status_code=503,

@@ -13,6 +13,9 @@ from typing import Optional
 
 from PIL import Image
 
+# Naikkan versi ini setiap kali isi PROMPT diubah.
+PROMPT_VERSION = "p1"
+
 PROMPT = """Kamu menilai kesegaran SATU jenis sayuran dari foto, untuk konsumen di pasar.
 Balas HANYA JSON dengan kunci persis ini:
 {"valid": true atau false,
