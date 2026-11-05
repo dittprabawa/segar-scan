@@ -62,7 +62,7 @@ uvicorn backend.app.main:app --reload
 | http://127.0.0.1:8000/ui/ | Halaman kamera dan unggah foto |
 | http://127.0.0.1:8000/docs | Dokumentasi API interaktif |
 | http://127.0.0.1:8000/health | Kesiapan penilai |
-| http://127.0.0.1:8000/ | Status dasar server |
+| http://127.0.0.1:8000/ | Otomatis mengarah ke `/ui/` |
 
 Restart server setelah mengubah `.env`. Opsi `--reload` hanya untuk pengembangan. Akses kamera dari HP memerlukan HTTPS dan izin kamera.
 
