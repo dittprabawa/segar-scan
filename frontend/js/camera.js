@@ -71,42 +71,6 @@ async function startCamera() {
 }
 
 
-captureButton.addEventListener("click", async () => {
-    if (busy) return;
-
-    if (!cameraVideo.videoWidth) {
-        cameraMessage.textContent =
-            "Kamera belum siap. Coba sebentar lagi.";
-        return;
-    }
-
-    busy = true;
-
-    try {
-        // Mengambil seluruh gambar kamera
-        const blob = await compressImage(
-            cameraVideo,
-            cameraVideo.videoWidth,
-            cameraVideo.videoHeight
-        );
-
-        // Menampilkan preview
-        showPreview(blob);
-
-        // Mengirim gambar ke AI SegerScan
-        await sendImage(blob, "image.jpg");
-
-    } catch (error) {
-        console.error("Gagal mengambil foto:", error);
-
-        cameraMessage.textContent =
-            "Foto gagal diambil. Coba lagi.";
-
-        busy = false;
-    }
-});
-
-
 // Crop foto bagian tengah kamera
 async function captureCenterCrop(video) {
     const width = video.videoWidth;

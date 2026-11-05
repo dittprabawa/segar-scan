@@ -14,7 +14,7 @@ from typing import Optional
 from PIL import Image
 
 # Naikkan versi ini setiap kali isi PROMPT diubah.
-PROMPT_VERSION = "p1"
+PROMPT_VERSION = "p2"
 
 PROMPT = """Kamu menilai kesegaran SATU jenis sayuran dari foto, untuk konsumen di pasar.
 Balas HANYA JSON dengan kunci persis ini:
@@ -28,6 +28,9 @@ Balas HANYA JSON dengan kunci persis ini:
  "ciri": "satu kalimat bahasa Indonesia sehari-hari tentang ciri yang terlihat"}
 
 Aturan:
+- Tentukan jenis sebelum menilai kesegaran. Periksa bentuk dan tepi daun, tulang daun, tangkai, batang, serta susunannya yang benar-benar terlihat. Warna hijau atau batang pucat saja tidak cukup untuk menentukan jenis.
+- Untuk jenis yang mirip seperti bayam, caisim, dan pakcoy, bandingkan beberapa ciri yang terlihat. Jangan langsung memilih caisim hanya karena sayur berdaun hijau dan bertangkai panjang; jangan pula memaksakan bayam tanpa bukti visual.
+- Jika ciri pembeda tidak terlihat atau jenis masih ambigu, balas valid=false dan minta foto ulang yang menampilkan daun serta batang dengan jelas. Jangan menebak jenis atau memberikan skor kesegaran saat identifikasi belum jelas.
 - valid=false jika gambar bukan sayuran, gelap, buram, atau berisi beberapa jenis sayur campur. Jangan beri skor jika valid=false.
 - valid=false jika pencahayaan terlalu terang atau silau sehingga warna asli, tekstur, atau bercak pada sayuran tidak bisa dinilai. Sayuran yang masih bisa dikenali belum tentu bisa dinilai kesegarannya. Latar putih saja bukan alasan menolak jika detail sayur tetap jelas.
 - Skor: 80-100 sangat segar, 60-79 segar, 40-59 segera olah, 20-39 layu, 0-19 tidak layak.

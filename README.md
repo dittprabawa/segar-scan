@@ -143,7 +143,7 @@ Contoh ketika Gemini diaktifkan dan kunci terisi:
 {
   "status": "ok",
   "versi": "1.2.0",
-  "versi_prompt": "p1",
+  "versi_prompt": "p2",
   "gemini": true,
   "model_lokal": false,
   "siap": true
@@ -152,7 +152,7 @@ Contoh ketika Gemini diaktifkan dan kunci terisi:
 
 `gemini: true` hanya menunjukkan konfigurasi kunci terisi dan Gemini diaktifkan; endpoint ini tidak menguji validitas kunci, kuota, atau koneksi. Field `model_lokal` masih dipertahankan untuk kompatibilitas dan bernilai `false`.
 
-`versi` berasal dari versi aplikasi FastAPI, sama dengan dokumentasi OpenAPI. `versi_prompt` berasal dari `PROMPT_VERSION` di `backend/app/services/vlm.py`; `p1` menandai prompt saat ini. Naikkan nilainya setiap kali isi prompt diubah. Endpoint ini tidak memanggil Gemini atau mengembalikan kunci API.
+`versi` berasal dari versi aplikasi FastAPI, sama dengan dokumentasi OpenAPI. `versi_prompt` berasal dari `PROMPT_VERSION` di `backend/app/services/vlm.py`; `p2` menandai prompt saat ini. Naikkan nilainya setiap kali isi prompt diubah. Endpoint ini tidak memanggil Gemini atau mengembalikan kunci API.
 
 ## Deployment dan operasi Vercel
 
@@ -232,3 +232,17 @@ Folder `ml/`, bobot dalam `models/`, dan berkas terkait training yang masih ters
 - Audit penanganan kunci dan privasi, termasuk perilaku unggahan sementara pada framework/hosting.
 
 Aplikasi tidak secara eksplisit menyimpan foto ke dataset. Namun unggahan diproses oleh framework/hosting dan gambar dikirim ke Gemini; jangan menyatakan bahwa seluruh alur tidak pernah menggunakan penyimpanan sementara.
+
+## Statistik prediksi (BE14)
+
+`GET /health` juga memuat objek `statistik`: `jumlah_permintaan`, `jumlah_ditolak`, `jumlah_error`, `persentase_ditolak`, dan `rata_rata_waktu_ms`.
+
+Statistik menghitung request `POST /predict` yang telah selesai: penolakan adalah HTTP 200 dengan `status: ditolak`; error mencakup HTTP 400 ke atas, termasuk validasi, rate limit, dan kegagalan server. Rata-rata dihitung dari semua request tersebut sejak masuk middleware sampai respons disiapkan, bukan waktu jaringan pengguna. Membuka `/health` tidak menaikkan penghitung.
+
+Penyimpanan statistik aman untuk akses bersamaan, tetapi hanya dalam memori satu proses. Di Vercel, setiap instance memiliki angka sendiri dan restart/cold start mengulang angka dari nol. Ini bukan statistik total seluruh deployment; agregasi permanen memerlukan penyimpanan bersama.
+
+## Evaluasi identifikasi jenis (BE20)
+
+Lihat `evaluasi/README.md` untuk menyiapkan dataset berlabel manusia dan membandingkan prompt aktif dengan kandidat melalui `python -m scripts.evaluasi_jenis`. Template dataset, kandidat prompt, serta laporan akurasi dan pasangan jenis yang tertukar sudah disediakan. Belum ada data evaluasi nyata atau bukti peningkatan akurasi; kandidat belum menggantikan prompt produksi.
+
+Prompt p2 menambahkan pemeriksaan ciri pembeda jenis dan penolakan saat identifikasi ambigu, menindaklanjuti laporan pengguna tentang bayam yang diprediksi caisim. Peningkatan akurasi belum dibuktikan dengan evaluasi foto berlabel.

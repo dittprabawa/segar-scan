@@ -182,6 +182,8 @@ def test_predict_rate_limit_429(monkeypatch, foto, gemini):
     assert response.json() == {"detail": "Terlalu banyak permintaan. Coba lagi sebentar lagi."}
     assert response.headers["retry-after"] == "60"
     assert gemini.call_count == jumlah
+    assert app.state.statistik.ringkasan()["jumlah_error"] == 1
+    assert app.state.statistik.ringkasan()["jumlah_permintaan"] == jumlah + 1
 
 
 def test_predict_error_tak_terduga_500(monkeypatch, foto, gemini, caplog):
@@ -192,6 +194,7 @@ def test_predict_error_tak_terduga_500(monkeypatch, foto, gemini, caplog):
     assert response.json() == {"detail": "Terjadi gangguan pada server. Coba lagi sebentar."}
     assert rahasia not in response.text
     assert rahasia not in caplog.text
+    assert app.state.statistik.ringkasan()["jumlah_error"] == 1
     gemini.assert_not_called()
 
 
