@@ -249,7 +249,7 @@ Untuk alur deployment online, foto pending tidak disimpan di Git repository (`da
 1. **Supabase (Rekomendasi untuk Vercel)**:
    - Object Storage bucket `pending` untuk file foto (`.img`) dan cadangan JSON.
    - Tabel PostgreSQL `pending_scans` untuk metadata terstruktur (skema tersedia di `scripts/supabase_schema.sql`).
-   - Variabel lingkungan: `SUPABASE_URL`, `SUPABASE_KEY` (service role atau anon), `SUPABASE_STORAGE_BUCKET`, `SUPABASE_TABLE`.
+   - Variabel lingkungan: `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (server; legacy `SUPABASE_KEY` juga didukung), `SUPABASE_STORAGE_BUCKET`, `SUPABASE_TABLE`.
 2. **Cloudflare R2 / AWS S3**:
    - S3-compatible Object Storage dengan gratis 10 GB dan bebas biaya transfer (egress) di Cloudflare R2.
    - Menggunakan pure Python SigV4 via `httpx` (tanpa perlu menambah dependensi berat di Vercel).

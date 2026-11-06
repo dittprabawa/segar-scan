@@ -969,9 +969,16 @@ def get_storage_backend(
         return LocalStorageBackend(root=target_root)
 
     # 1. Supabase
-    if tipe == "supabase" or (not tipe and os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_KEY")):
+    supabase_key = (
+        os.getenv("SUPABASE_SECRET_KEY")
+        or os.getenv("SUPABASE_KEY")
+        or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        or os.getenv("SUPABASE_PUBLISHABLE_KEY")
+        or os.getenv("SUPABASE_ANON_KEY")
+    )
+    if tipe == "supabase" or (not tipe and os.getenv("SUPABASE_URL") and supabase_key):
         url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
+        key = supabase_key
         if not url or not key:
             raise ValueError("SUPABASE_URL dan SUPABASE_KEY wajib diset untuk backend Supabase")
         bucket = os.getenv("SUPABASE_STORAGE_BUCKET") or os.getenv("SUPABASE_BUCKET", "pending")
