@@ -8,7 +8,7 @@ Foto yang diproses disimpan ke antrean **pending** untuk ditinjau manusia. Setel
 
 - Satu jenis bahan per foto; boleh beberapa buah, ikat, atau potongan dari jenis yang sama.
 - Mendukung sayuran serta daging mentah seperti ayam, sapi, kambing, dan babi. Masakan dan daging olahan belum didukung.
-- Prompt aktif **p4** memeriksa tanda pembusukan sebelum memberi skor. Kerusakan pada sebagian objek tidak boleh tertutupi oleh bagian lain yang tampak segar.
+- Prompt aktif **p5** memeriksa tanda pembusukan sebelum memberi skor. Beberapa area kulit wortel yang menghitam dan tampak cekung dihitung sebagai indikasi kuat; kerusakan pada sebagian objek tidak boleh tertutupi oleh bagian lain yang tampak segar.
 - Jika model melaporkan pembusukan jelas, backend membatasi skor dan rentang ke 0–19 serta menampilkan **“Indikasi busuk”**. Jika meragukan, aplikasi meminta foto dekat tanpa memberi skor.
 - Daging memakai label kondisi visual, bukan “layu”, “segera olah”, atau saran “layak dibeli”.
 
@@ -108,7 +108,7 @@ python -m scripts.review_dataset verify ID_FOTO --jenis bayam --status ok --pera
 
 Ganti `ID_FOTO` dengan ID lengkap dari daftar. Periksa gambar dan masukkan jenis sebenarnya dari pengamatan manusia, bukan sekadar menyalin prediksi Gemini.
 
-**`--status ok` berarti foto dapat dinilai, bukan bahannya segar.** Foto wortel busuk yang jelas tetap dapat berstatus `ok`. `ditolak` digunakan untuk foto yang tidak layak dinilai. Label kondisi seperti `segar`, `layu`, atau `busuk` belum tersedia dalam verifikasi; dataset ini belum menjadi target training kesegaran.
+**`--status ok` berarti foto dapat dinilai.** Foto wortel busuk yang jelas tetap dapat berstatus `ok`. `ditolak` digunakan untuk foto yang tidak layak dinilai. Label kondisi seperti `segar`, `layu`, atau `busuk` belum tersedia dalam verifikasi; dataset ini belum menjadi target training kesegaran.
 
 ### Verifikasi massal per jenis
 
@@ -232,7 +232,7 @@ Respons memuat `status`, `jenis`, `skor`, `skor_min`, `skor_maks`, `label`, `key
 
 ### `GET /health`
 
-Memuat `status`, versi aplikasi `1.2.0`, `versi_prompt` (`p4`), `gemini`, `model_lokal`, `siap`, dan `statistik`. `gemini`/`siap` memeriksa konfigurasi, bukan validitas kunci, kuota, atau koneksi. Endpoint tidak memanggil Gemini.
+Memuat `status`, versi aplikasi `1.2.0`, `versi_prompt` (`p5`), `gemini`, `model_lokal`, `siap`, dan `statistik`. `gemini`/`siap` memeriksa konfigurasi, bukan validitas kunci, kuota, atau koneksi. Endpoint tidak memanggil Gemini.
 
 `model_lokal` adalah field lama untuk model kesegaran dan tetap `false`; field ini **bukan indikator model jenis** `models/jenis.json`. Objek `statistik` menghitung request `POST /predict`, penolakan penilaian, error HTTP, persentase penolakan, dan rata-rata durasi. Termasuk error validasi, rate limit, batas ukuran, dan error tak terduga. Statistik tersimpan per proses sejak startup; membuka `/health` tidak menaikkan penghitung.
 
@@ -278,36 +278,6 @@ Untuk alur deployment online, foto pending tidak disimpan di Git repository (`da
 4. **Penyimpanan Lokal**:
    - Digunakan otomatis saat aplikasi berjalan lokal tanpa kredensial cloud (`data/pending/`).
 
-### Perintah Admin untuk Antrean Pending
-
-```bash
-# Lihat informasi storage backend yang aktif
-python scripts/review_dataset.py info
-
-# Lihat daftar foto pending di cloud / lokal
-python scripts/review_dataset.py list
-
-# Lihat rekap jumlah pending per jenis makanan
-python scripts/review_dataset.py groups
-
-# (Opsional) Unduh semua foto pending dari cloud ke data/pending/ laptop untuk dicek visual
-python scripts/review_dataset.py sync
-
-# Verifikasi foto langsung dari cloud (otomatis diunduh ke scripts/images/ & dicatat ke scripts/dataset.csv)
-python scripts/review_dataset.py verify <ID_FOTO> --jenis "bayam" --status ok --perangkat "iPhone"
-
-# Verifikasi massal satu kelompok
-python scripts/review_dataset.py verify-group --jenis "bayam" --status ok --perangkat "iPhone"
-
-# Latih ulang model setelah ada data baru
-python scripts/train_jenis.py
-
-# Push model baru ke GitHub untuk auto-deploy Vercel
-git add models/jenis.json models/jenis.report.json
-git commit -m "Update model jenis setelah verifikasi dataset baru"
-git push
-```
-
 Foto pending dan `scripts/images/` dikecualikan dari Git dan tidak disajikan sebagai endpoint publik. Batas default adalah 512 MB untuk pending dan 2 GB untuk foto/CSV terverifikasi. Pending yang belum diverifikasi dibersihkan setelah 30 hari; data verified dipertahankan. Data gambar yang dikirim ke Gemini mengikuti alur layanan penilai. Rate limiter, semaphore, dan jeda model berlaku per proses, bukan global lintas instance.
 
 ## Pengujian
@@ -347,7 +317,7 @@ node --test tests/frontend/camera.test.cjs
 
 ```text
 backend/app/main.py                 # Endpoint, middleware, pending, integrasi jenis lokal
-backend/app/services/vlm.py         # Prompt p4 dan panggilan Gemini
+backend/app/services/vlm.py         # Prompt p5 dan panggilan Gemini
 backend/app/services/inference.py   # Aturan hasil visual dan pembusukan
 backend/app/services/dataset_pending.py
 backend/app/services/jenis_lokal.py # Pemuat model dengan reload
