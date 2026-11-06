@@ -1,16 +1,19 @@
 {
-  "jumlah_latih": 18,
+  "jumlah_latih": 29,
   "jumlah_test": 0,
   "per_jenis": {
-    "bawang merah": 2,
-    "bawang putih": 2,
-    "bayam": 2,
+    "bawang merah": 3,
+    "bawang putih": 4,
+    "bayam": 4,
     "daging ayam": 1,
     "daging babi": 1,
     "daging sapi": 1,
+    "daun bawang": 1,
+    "jagung": 1,
     "kubis": 3,
-    "tomat": 3,
-    "wortel": 3
+    "sawi putih": 1,
+    "tomat": 5,
+    "wortel": 4
   },
   "akurasi_test": null,
   "hasil_test": [],
