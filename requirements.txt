@@ -14,5 +14,3 @@ slowapi==0.1.10
 supabase>=2.1.0
 # Untuk R2 / S3 Storage
 boto3>=1.34.0
-# Untuk Vercel KV (opsional, kalau pakai KV)
-vercelkv>=0.1.11
