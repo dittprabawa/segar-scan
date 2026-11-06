@@ -9,3 +9,10 @@ google-genai>=1.0.0
 httpx>=0.27.0
 # Adapter backend/app/slowapi_compat.py diuji pada versi ini.
 slowapi==0.1.10
+
+# Untuk koneksi dan operasi Supabase (Realtime, Storage, Postgres)
+supabase>=2.1.0
+# Untuk R2 / S3 Storage
+boto3>=1.34.0
+# Untuk Vercel KV (opsional, kalau pakai KV)
+vercelkv>=0.1.11

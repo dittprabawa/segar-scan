@@ -9,5 +9,6 @@ if str(ROOT_DIR) not in sys.path:
 
 @pytest.fixture(autouse=True)
 def isolated_dataset_pending(tmp_path, monkeypatch):
-    """Tes API tidak boleh menulis foto ke dataset pengguna."""
+    """Tes API tidak boleh menulis foto ke dataset pengguna atau cloud saat testing."""
     monkeypatch.setenv('DATASET_PENDING_DIR', str(tmp_path / 'pending'))
+    monkeypatch.setenv('STORAGE_BACKEND', 'local')

@@ -7,6 +7,8 @@ from pathlib import Path
 import sys
 from typing import Optional
 
+import httpx
+
 # Pastikan root proyek ada di sys.path agar impor 'backend' dan 'ml' bekerja saat dijalankan langsung
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
@@ -155,6 +157,12 @@ def main():
             verifikasi_pending(args.id, args.jenis, args.status, args.perangkat,
                                args.split, args.dataset, root=root_arg, storage=storage_choice)
             print(f'Foto diverifikasi dan masuk dataset: {args.dataset}')
+    except httpx.HTTPError as exc:
+        parser.error(
+            f"Gagal menghubungi cloud storage ({type(exc).__name__}): {exc}.\n"
+            "Pastikan koneksi internet laptop aktif dan SUPABASE_URL di .env adalah Project URL dasar "
+            "(contoh: https://hrtmxjluobmthtjkchkp.supabase.co tanpa tambahan /rest/v1)."
+        )
     except (OSError, ValueError, KeyError) as exc:
         parser.error(str(exc))
 

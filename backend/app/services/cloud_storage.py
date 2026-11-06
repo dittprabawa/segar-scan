@@ -247,7 +247,9 @@ class SupabaseStorageBackend(StorageBackend):
         table: str = "pending_scans",
         client: Optional[httpx.Client] = None,
     ):
-        self.url = url.rstrip("/")
+        # Bersihkan suffix seperti /rest/v1 atau /rest jika pengguna menyalin endpoint REST
+        cleaned_url = re.sub(r"/rest(/v1)?/?$", "", url.strip().rstrip("/"))
+        self.url = cleaned_url
         self.key = key
         self.bucket = bucket
         self.table = table
@@ -266,10 +268,13 @@ class SupabaseStorageBackend(StorageBackend):
         }
 
     def _headers(self, content_type: Optional[str] = None) -> Dict[str, str]:
-        headers = {
-            "apikey": self.key,
-            "Authorization": f"Bearer {self.key}",
-        }
+        headers = {"apikey": self.key}
+        # Supabase's newer opaque API keys (sb_secret_*/sb_publishable_*) are
+        # accepted via apikey only. Sending one as a Bearer token makes the
+        # gateway try to parse it as a JWT and reject it. Legacy JWT keys still
+        # need the Authorization header for Storage and PostgREST requests.
+        if not self.key.startswith(("sb_secret_", "sb_publishable_")):
+            headers["Authorization"] = f"Bearer {self.key}"
         if content_type:
             headers["Content-Type"] = content_type
         return headers
