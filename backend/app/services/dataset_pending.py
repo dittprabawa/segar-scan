@@ -2,7 +2,12 @@
 
 from contextlib import contextmanager
 from datetime import datetime, timezone, timedelta
-import fcntl
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+
 import hashlib
 import json
 import logging
