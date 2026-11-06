@@ -14,6 +14,24 @@ Foto yang diproses disimpan ke antrean **pending** untuk ditinjau manusia. Setel
 
 Skor 0–100 adalah perkiraan visual dan aturan kategori aplikasi, bukan persentase keamanan pangan. Akurasi pengenalan jenis dan pembusukan pada foto lapangan belum divalidasi. Bagian bahan yang tertutup tidak dapat dinilai dari foto.
 
+## Tampilan aplikasi — dark theme
+
+Berikut tampilan SegarScan pada iPhone, termasuk layar scan, proses penilaian, hasil, dan dialog informasi.
+
+<table>
+  <tr>
+    <td align="center"><strong>Halaman scan</strong><br><img src="docs/screenshots/dark-theme-home.jpg" alt="Halaman scan SegarScan dalam dark theme" width="260"></td>
+    <td align="center"><strong>Hasil penilaian</strong><br><img src="docs/screenshots/dark-theme-result.jpg" alt="Hasil penilaian SegarScan dalam dark theme" width="260"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Proses penilaian</strong><br><img src="docs/screenshots/dark-theme-loading.jpg" alt="Layar proses penilaian SegarScan dalam dark theme" width="260"></td>
+    <td align="center"><strong>Dialog informasi</strong><br><img src="docs/screenshots/dark-theme-info.jpg" alt="Dialog informasi SegarScan dalam dark theme" width="260"></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><strong>Pratinjau tab Safari</strong><br><img src="docs/screenshots/dark-theme-safari-tabs.jpg" alt="Pratinjau tab SegarScan di Safari iPhone" width="260"></td>
+  </tr>
+</table>
+
 ## Menjalankan lokal
 
 Jalankan dari root proyek. Alur penyimpanan dataset menggunakan `fcntl`, sehingga saat ini memerlukan macOS/Linux; Windows native belum didukung (gunakan lingkungan Linux seperti WSL).
