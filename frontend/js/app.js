@@ -221,6 +221,13 @@ function showPrediction(data) {
 
     const lines = [];
 
+    if (data.jenis_lokal?.jenis) {
+        lines.push(`ML lokal (eksperimental): ${data.jenis_lokal.jenis}. Dilatih dari ${data.jenis_lokal.jumlah_latih} foto terverifikasi.`);
+        if (data.jenis_lokal.jenis !== data.jenis) {
+            lines.push("Prediksi jenis berbeda; perlu verifikasi manusia.");
+        }
+    }
+
     if (data.keyakinan === "rendah") {
         lines.push(
             "⚠ Kami kurang yakin. Coba foto ulang lebih dekat."
@@ -324,7 +331,7 @@ async function sendImage(blob, name) {
 
             showMessage(
                 "Belum terhubung",
-                "Tidak dapat menghubungi server SegerScan."
+                "Tidak dapat menghubungi server SegarScan."
             );
         }
 
@@ -407,7 +414,7 @@ captureButton.addEventListener("click", async () => {
     busy = true;
 
     try {
-        // Crop tengah untuk fokus satu jenis sayuran
+        // Crop tengah untuk fokus satu jenis bahan dapuran
         const blob = await captureCenterCrop(cameraVideo);
 
         showPreview(blob);
@@ -465,4 +472,4 @@ el("btn-close").addEventListener("click", () => {
     el("info-dialog").close();
 });
 
-console.log("app.js SegerScan berhasil dimuat");
+console.log("app.js SegarScan berhasil dimuat");

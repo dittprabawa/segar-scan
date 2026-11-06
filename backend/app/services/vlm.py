@@ -15,26 +15,38 @@ from typing import Optional
 from PIL import Image
 
 # Naikkan versi ini setiap kali isi PROMPT diubah.
-PROMPT_VERSION = "p2"
+PROMPT_VERSION = "p4"
 
-PROMPT = """Kamu menilai kesegaran SATU jenis sayuran dari foto, untuk konsumen di pasar.
+PROMPT = """Kamu menilai kesegaran SATU jenis bahan dapur (sayuran atau daging mentah) dari foto, untuk konsumen di pasar.
 Balas HANYA JSON dengan kunci persis ini:
 {"valid": true atau false,
  "alasan_tolak": "isi jika valid=false, bahasa Indonesia sehari-hari, satu kalimat",
- "jenis": "nama sayur huruf kecil, mis. bayam, tomat, kangkung",
+ "jenis": "nama bahan huruf kecil, mis. bayam, wortel, daging ayam, daging sapi, daging kambing",
+ "kategori": "sayuran" atau "daging",
  "skor": angka 0-100,
  "skor_min": angka 0-100,
  "skor_maks": angka 0-100,
  "keyakinan": "rendah" atau "sedang" atau "tinggi",
- "ciri": "satu kalimat bahasa Indonesia sehari-hari tentang ciri yang terlihat"}
+ "ciri": "satu kalimat bahasa Indonesia sehari-hari tentang ciri yang terlihat",
+ "pembusukan": "jelas" atau "meragukan" atau "tidak_terlihat"}
 
 Aturan:
-- Tentukan jenis sebelum menilai kesegaran. Periksa bentuk dan tepi daun, tulang daun, tangkai, batang, serta susunannya yang benar-benar terlihat. Warna hijau atau batang pucat saja tidak cukup untuk menentukan jenis.
+- Tentukan kategori dan jenis sebelum menilai. Untuk sayuran, periksa bentuk dan tepi daun, tulang daun, tangkai, batang, serta susunannya yang benar-benar terlihat. Warna hijau atau batang pucat saja tidak cukup untuk menentukan jenis.
 - Untuk jenis yang mirip seperti bayam, caisim, dan pakcoy, bandingkan beberapa ciri yang terlihat. Jangan langsung memilih caisim hanya karena sayur berdaun hijau dan bertangkai panjang; jangan pula memaksakan bayam tanpa bukti visual.
-- Jika ciri pembeda tidak terlihat atau jenis masih ambigu, balas valid=false dan minta foto ulang yang menampilkan daun serta batang dengan jelas. Jangan menebak jenis atau memberikan skor kesegaran saat identifikasi belum jelas.
-- valid=false jika gambar bukan sayuran, gelap, buram, atau berisi beberapa jenis sayur campur. Jangan beri skor jika valid=false.
-- Skor: 80-100 sangat segar, 60-79 segar, 40-59 segera olah, 20-39 layu, 0-19 tidak layak.
-- Nilai dari warna, kelayuan, bercak/lendir, kilap, dan kerusakan fisik.
+- Jika ciri pembeda tidak terlihat atau jenis masih ambigu, balas valid=false dan minta foto ulang yang menampilkan ciri bahan dengan jelas. Jangan menebak jenis atau memberikan skor kesegaran saat identifikasi belum jelas.
+- Daging mentah termasuk cakupan: ayam, sapi, kambing, dan daging lain yang dapat diidentifikasi. Gunakan kategori=daging dan awalan jenis "daging". Jangan memaksakan identifikasi spesies dari warna saja; jika spesies tidak jelas, tulis jenis="daging (jenis belum pasti)" dan keyakinan=rendah.
+- Untuk daging, jelaskan kondisi permukaan dan kerusakan yang terlihat. Warna saja tidak cukup untuk menyimpulkan pembusukan atau kesegaran. Jangan menyimpulkan aroma, suhu, lama penyimpanan, bakteri, kehalalan, atau keamanan konsumsi dari gambar. Skor hanya perkiraan kondisi visual.
+- Jika daging tertutup kemasan tidak tembus pandang, tertutup es tebal, atau permukaannya tidak dapat diperiksa, valid=false dan minta foto yang memperlihatkan permukaan.
+- valid=false jika gambar di luar sayuran/daging mentah, berupa masakan atau daging olahan, gelap, buram, atau berisi beberapa jenis bahan campur. Jangan beri skor jika valid=false.
+- Untuk sayuran, skor: 80-100 sangat segar, 60-79 segar, 40-59 segera olah, 20-39 layu, 0-19 tidak layak.
+- Untuk daging, skor 0-100 menggambarkan kondisi visual, bukan probabilitas aman atau kesegaran terukur; jangan memakai istilah layu atau menyarankan segera dimasak untuk mengatasi kerusakan.
+- Periksa tanda pembusukan SEBELUM memberi skor: jelaskan lokasi dan bentuk kerusakan yang benar-benar terlihat. Jangan menilai hanya dari warna cerah atau kilap.
+- Untuk wortel, periksa ujung, pangkal, dan permukaan tiap wortel yang terlihat: area gelap yang tampak rusak/cekung, jaringan hancur atau basah membusuk, dan pertumbuhan menyerupai jamur. Jangan mengabaikan kerusakan karena sebagian besar permukaan masih oranye.
+- pembusukan=jelas jika terdapat bukti visual kuat pembusukan pada bagian mana pun yang terlihat. Beri skor serta seluruh rentang 0-19. Bahan busuk tetap valid=true jika jenis dan kerusakannya jelas: valid berarti foto dapat dinilai, bukan sayurnya segar.
+- Bercak hitam saja tidak membuktikan busuk: tanah, bayangan, dan luka kering dapat terlihat mirip. Jika tidak dapat dibedakan, pembusukan=meragukan; jelaskan ketidakpastiannya dan minta foto dekat area tersebut, jangan menyimpulkan segar.
+- pembusukan=tidak_terlihat hanya jika bagian yang terlihat tidak menunjukkan tanda pembusukan atau bercak mencurigakan; ini bukan jaminan seluruh bahan bebas pembusukan.
+- Beberapa buah, potongan daging, atau ikat dari SATU jenis diperbolehkan. Periksa kondisi yang bervariasi; jangan merata-ratakan bagian busuk dengan bagian segar sehingga tumpukan dinilai segar. Jelaskan jika kerusakan hanya terlihat pada sebagian objek. Bagian tertutup tidak boleh diasumsikan segar.
+- Nilai juga kelayuan dan kerusakan fisik. Jangan menyimpulkan aroma, tekstur saat disentuh, atau kondisi bagian dalam dari foto.
 - Rentang skor_min sampai skor_maks harus mencerminkan ketidakpastianmu (lebar 10-20 poin).
 - Sayur yang basah atau tampak disemprot air bisa terlihat lebih segar daripada aslinya: turunkan keyakinan.
 - Ini perkiraan visual. Jangan menyebut aman dimakan, bebas pestisida, atau pasti segar.
@@ -43,8 +55,6 @@ Aturan:
 # BE17: versi prompt. SENGAJA konstanta di samping PROMPT, bukan env, supaya ikut berubah
 # bersama teks prompt. Naikkan (p3, p4, ...) setiap kali PROMPT diubah; tes_prompt_versi
 # akan gagal bila teks prompt berubah tanpa versi baru.
-PROMPT_VERSION = "p2"
-
 log = logging.getLogger("segarscan")
 
 _client = None
@@ -228,8 +238,8 @@ def _panggil_model(model: str, isi, types, detik: float, tunggu_slot: float, rid
             model,
             _status_galat(e),
             time.monotonic() - t_mulai,
-            str(e)[:200],
-            f" | teks={teks[:200]!r}" if teks else "",  # potongan jawaban bila JSON rusak
+            type(e).__name__,
+            "",  # potongan jawaban bila JSON rusak
         )
         raise
     finally:
@@ -434,11 +444,13 @@ def nilai(
     return {
         "valid": True,
         "jenis": str(d.get("jenis") or "unknown").lower(),
+        "kategori": str(d.get("kategori") or "").strip().lower(),
         "skor": skor,
         "skor_min": _angka(d.get("skor_min"), max(0.0, skor - 8)),
         "skor_maks": _angka(d.get("skor_maks"), min(100.0, skor + 8)),
         "keyakinan": keyakinan,
         "ciri": str(d.get("ciri") or ""),
+        "pembusukan": str(d.get("pembusukan") or "meragukan").strip().lower(),
         "model": d.get("_model"),
         "prompt_versi": PROMPT_VERSION,
     }

@@ -7,4 +7,5 @@ numpy>=1.26.0
 python-dotenv>=1.0.0
 google-genai>=1.0.0
 httpx>=0.27.0
-slowapi
+# Adapter backend/app/slowapi_compat.py diuji pada versi ini.
+slowapi==0.1.10

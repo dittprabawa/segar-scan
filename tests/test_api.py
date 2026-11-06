@@ -45,7 +45,8 @@ def test_health(monkeypatch, aktif):
 # Hanya panggilan layanan Gemini yang diganti agar tes bebas jaringan/kuota.
 @pytest.fixture(autouse=True)
 def lingkungan_api(monkeypatch):
-    monkeypatch.setattr(app.state, "statistik", Statistik())
+    monkeypatch.setitem(app.state._state, "statistik", Statistik())
+    monkeypatch.setenv("USE_LOCAL_JENIS", "0")
     monkeypatch.setenv("GEMINI_API_KEY", "kunci-tiruan")
     monkeypatch.setenv("USE_VLM", "1")
     monkeypatch.setattr(main.limiter, "enabled", False)
@@ -61,7 +62,7 @@ def lingkungan_api(monkeypatch):
 @pytest.fixture
 def gemini(monkeypatch):
     mock = Mock(return_value={
-        "valid": True, "jenis": "bayam", "skor": 85.0,
+        "valid": True, "pembusukan": "tidak_terlihat", "jenis": "bayam", "skor": 85.0,
         "skor_min": 80.0, "skor_maks": 90.0,
         "keyakinan": "tinggi", "ciri": "Daun hijau dan tegak.",
         "model": "model-tiruan",
@@ -93,10 +94,11 @@ def test_predict_sukses(foto, gemini):
         "status": "ok", "skor": 85.0, "skor_min": 80.0, "skor_maks": 90.0,
         "label": "Sangat segar", "jenis": "bayam", "keyakinan": "tinggi",
         "saran": "Layak dibeli", "ciri": "Daun hijau dan tegak.",
-        "alasan": None, "sumber": "gemini",
+        "alasan": None, "sumber": "gemini", "jenis_lokal": None,
     }
     gemini.assert_called_once()
     assert gemini.call_args.kwargs["deadline"] is not None
+    assert gemini.call_args.kwargs["req_id"] == response.headers["x-request-id"]
 
 
 def test_predict_penolakan_gemini(foto, gemini):
@@ -154,6 +156,9 @@ def test_predict_file_besar_413(gemini, kelebihan):
     response = kirim(b"x" * (main.MAKS_BYTES + kelebihan))
     assert response.status_code == 413
     assert response.json() == {"detail": "Foto terlalu besar (maks 5 MB)"}
+    assert response.headers["x-request-id"]
+    assert app.state.statistik.ringkasan()["jumlah_permintaan"] == 1
+    assert app.state.statistik.ringkasan()["jumlah_error"] == 1
     gemini.assert_not_called()
 
 
@@ -191,6 +196,7 @@ def test_predict_error_tak_terduga_500(monkeypatch, foto, gemini, caplog):
     monkeypatch.setattr(main.service, "predict", Mock(side_effect=ValueError(rahasia)))
     response = kirim(foto)
     assert response.status_code == 500
+    assert response.headers["x-request-id"]
     assert response.json() == {"detail": "Terjadi gangguan pada server. Coba lagi sebentar."}
     assert rahasia not in response.text
     assert rahasia not in caplog.text

@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f6faf5">
   <meta name="description" content="Cek kesegaran Bahan Dapurmu dari foto">
-  <title>SegarScan — Cek Kesegaran Bahan Dapurmu</title>
+  <title>SegarScan — Cek Bahan Dapurmu</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -38,7 +38,7 @@
       <section id="camera-section" class="screen" aria-label="Ambil foto">
         <div class="intro">
           <h2>Periksa Bahan Dapurmu</h2>
-          <p>Dekatkan ke satu jenis Bahan Dapurmu! Pastikan cahaya cukup.</p>
+          <p>Scan sayuran atau daging mentah. Satu jenis bahan per foto, dengan cahaya cukup.</p>
         </div>
 
         <div class="viewfinder">
@@ -54,15 +54,16 @@
                 src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAACXBIWXMAAAsTAAALEwEAmpwYAAADLklEQVR4nO2Yy0tVURTGf4gNyqsF2UShUabQIMsaRo+BJUGlf0R/QA97QfR0WmnNKhs6CUJHeQ0icRBkNeo1KwMHUeYzMG83VnxXdnKv59zzuLcb54MN57HXt9d39trrrL0hQYIE5cBa4ALwDlgCsj7bkmzOi6OsWAc8LcL5Qm0MqC2nkDtyZBI4DFQXYVstm0lx3A7rzJjH1xotYLcZWAR+AttDjN8qjkVxBoafqc+Hi3o3QHgMiMs4A8X3cQ9n/YhsJzza8/DOAS+BK8CmQob7gE+O0fMC/UY9RDwDqiIQUiWuQuNMA10rjQ4qHq3DQ2BPkYu0VKjRB38kXzNAZ+5lPfBFL05QOTgjn79LA5f04EmMgzZr4BHgrWJ9TtdpoBvYGoB3UL5ftpvXutnrdLBc/hmYADpCCGiT835/giOy8Yv9srMEwLxuLP5ymHDILQEUC1tffcAvcXwF7gJHNDs1anZ9FLinPlnZ9Ppco7WymaFAqg0jZIPCNKuPdBWo82Fnfa4BC87sGJcXlv3PJ6RDYkzEoSJErHFEmO0Oikeb8yHTPmZmVSFB0eeIaAjB0+CIuVlqIW2K7/mAM7ESOxVmGQ++yIXkspOtiahwXZzDpRLS7GQnPwvbL9YD38TdVAohZ8VhKTZq3Bf36VIISYvD/glRo9MjvCIV8kEcW4gezeK2vXzsQmbFkSJ6pMRtY8QuZCZGIXXO/iN2Ie/FEaSC9UKLuK1S/i8W++NSCOkWh1WxUeOBuE8WeJ/8EL1KFCvFo0KPR1jFWjQuqOALi13ADxWNdmBX0jK+V1xWgjeG4Gl0yvgbHn1jEVLthJjt+XcH4GgFPpZ7Y4W2p7l0vKBS3BatF6xPj8IpV1uF3uqGhX3FW4rvrDJPP3BMP7iUWov+E/1OdsoonPweEC77H2d5sQ0YcgbzaukiE8Vf5csr3dhRZFxo0n5iWKXGrNobpdZTASvnA/J9HJ1sZ3WeWmkYku92WvrneH5aD+xYs1JwTj5PARtzD7uchTmoo8g41kxYpBROuZnI5CtUO3Wyna2QNrVatV2vk+1xZ9f3L7UZ4IXWxHI4JUiQIAEVh98dtOAQqp4M3gAAAABJRU5ErkJggg=="
                 alt="camera--v1"></span>
             <strong>Kamera belum dinyalakan</strong>
-            <small>Foto hanya digunakan untuk pemeriksaan.</small>
+            <small>Foto dapat disimpan untuk verifikasi dataset.</small>
           </div>
           <div class="view-tip">Satu jenis Bahan • Cahaya cukup</div>
         </div>
 
         <p id="camera-message" class="camera-message" role="status">
-          Kami butuh kamera untuk memotret Bahan Dapurmu. Foto dikirim untuk dinilai, tidak disimpan di perangkat oleh
-          SegarScan.
+          Kami butuh kamera untuk memotret Bahan Dapurmu. Foto dikirim untuk dinilai.
         </p>
+
+        <p class="camera-message">Foto yang dikirim dapat disimpan di server untuk ditinjau manusia dan digunakan dalam dataset evaluasi.</p>
 
         <div class="actions">
           <button type="button" id="btn-start" class="btn primary">Nyalakan Kamera</button>
@@ -99,7 +100,7 @@
           <div id="label" class="category"></div>
           <div id="extra" class="extra"></div>
           <p id="disclaimer" class="disclaimer">
-            Perkiraan dari foto. Periksa juga aroma dan tekstur saat memilih.
+            Perkiraan kondisi visual. Foto tidak dapat memastikan kesegaran atau keamanan pangan.
           </p>
         </div>
 
@@ -113,11 +114,11 @@
   <dialog id="info-dialog" aria-labelledby="info-title">
     <div class="dialog-content">
       <div class="dialog-head">
-        <h2 id="info-title">Cara Pakai SegerScan</h2>
+        <h2 id="info-title">Cara Pakai SegarScan</h2>
         <button type="button" id="btn-close" class="icon-btn" aria-label="Tutup informasi">✕</button>
       </div>
       <p>1. Nyalakan kamera atau pilih foto dari galeri.</p>
-      <p>2. Foto satu jenis Bahan dengan cahaya cukup.</p>
+      <p>2. Foto satu jenis sayuran atau daging mentah dengan cahaya cukup. Masakan dan daging olahan belum didukung.</p>
       <p>3. Baca perkiraan kesegaran dan sarannya.</p>
 
       <h3>Privasi</h3>

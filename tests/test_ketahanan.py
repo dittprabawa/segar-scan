@@ -65,8 +65,8 @@ def test_antrean_gemini_penuh_tidak_tersedia(monkeypatch):
     monkeypatch.setattr(inference, "_gate", gate)
     monkeypatch.setattr(inference, "GATE_TUNGGU", 0)
 
-    def nilai(im, deadline=None):
-        return {"valid": True, "jenis": "bayam", "skor": 85.0, "skor_min": 80.0,
+    def nilai(im, deadline=None, req_id=None):
+        return {"valid": True, "pembusukan": "tidak_terlihat", "jenis": "bayam", "skor": 85.0, "skor_min": 80.0,
                 "skor_maks": 90.0, "keyakinan": "tinggi", "ciri": "", "model": "x"}
 
     monkeypatch.setattr(vlm, "nilai", nilai)

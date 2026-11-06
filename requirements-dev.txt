@@ -1,0 +1,7 @@
+-r requirements.txt
+pytest>=8
+# Starlette TestClient menggunakan httpx2; httpx tetap dibutuhkan google-genai.
+httpx2==2.16.0
+
+# Audit advisori dependensi (memerlukan jaringan).
+pip-audit==2.10.1

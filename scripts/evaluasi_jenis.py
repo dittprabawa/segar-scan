@@ -9,6 +9,11 @@ import os
 import time
 from collections import Counter
 from pathlib import Path
+import sys
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 from dotenv import load_dotenv
 
@@ -71,7 +76,7 @@ def baca_dataset(path, split):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataset", type=Path, default=Path("evaluasi/dataset.csv"))
+    parser.add_argument("--dataset", type=Path, default=Path(__file__).resolve().parent / "dataset.csv")
     parser.add_argument("--split", choices=["dev", "test"], default="dev")
     parser.add_argument("--model", required=True, help="Satu model Gemini yang tersedia")
     parser.add_argument("--output", type=Path, required=True, help="Folder baru untuk hasil")

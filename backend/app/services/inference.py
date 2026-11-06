@@ -48,15 +48,39 @@ class InferenceService:
                         hasil = self._ditolak(d["alasan"], model=nama_model, prompt_versi=versi)
                         self._catat(rid, hasil, penilai="gemini", sibuk=bool(d.get("sibuk")))
                         return hasil
+                    pembusukan = d.get("pembusukan", "meragukan")
+                    if pembusukan not in {"jelas", "tidak_terlihat"}:
+                        hasil = self._ditolak(
+                            "Tanda pembusukan belum dapat dipastikan. "
+                            "Ambil foto dekat bagian yang bercak atau rusak, "
+                            "dan pisahkan objek yang kondisinya berbeda.",
+                            model=nama_model, prompt_versi=versi,
+                        )
+                        hasil["ciri"] = d.get("ciri") or None
+                        self._catat(rid, hasil, penilai="gemini")
+                        return hasil
+                    if pembusukan == "jelas":
+                        # Batas kategori aplikasi, bukan probabilitas atau ukuran klinis.
+                        d = dict(d)
+                        d["skor"] = min(d["skor"], 19.0)
+                        d["skor_min"] = min(d["skor_min"], d["skor"])
+                        d["skor_maks"] = max(d["skor"], min(d["skor_maks"], 19.0))
                     hasil = self._ok(
                         d["skor"], d["jenis"], "gemini",
                         (d["skor_min"], d["skor_maks"]), d["keyakinan"], d["ciri"],
                         model=nama_model, prompt_versi=versi,
+                        kategori=d.get("kategori"),
                     )
+                    if pembusukan == "jelas":
+                        hasil["label"] = "Indikasi busuk"
+                        hasil["saran"] = (
+                            "Terdapat indikasi pembusukan pada bagian yang terlihat. "
+                            "Sebaiknya dihindari; bagian lain dalam tumpukan belum dapat dipastikan."
+                        )
                     self._catat(rid, hasil, penilai="gemini")
                     return hasil
                 except Exception as e:  # semua model gagal / waktu habis
-                    log.warning("[%s] Gemini gagal atau timeout: %s", rid, str(e)[:200])
+                    log.warning("[%s] Gemini gagal atau timeout: %s", rid, type(e).__name__)
                 finally:
                     _gate.release()
             else:
@@ -95,11 +119,15 @@ class InferenceService:
 
     @classmethod
     def _ok(cls, skor, jenis, sumber, rentang, keyakinan, ciri,
-            model: Optional[str] = None, prompt_versi: Optional[str] = None) -> dict:
+            model: Optional[str] = None, prompt_versi: Optional[str] = None,
+            kategori: Optional[str] = None) -> dict:
+        daging = kategori == "daging" or "daging" in jenis.lower() or jenis.lower() in {"ayam", "sapi", "kambing", "babi", "bebek", "domba"}
+        label = ("Tampilan relatif baik" if skor >= 60 else "Perlu pemeriksaan lebih lanjut") if daging else cls._label(skor)
+        saran = ("Penilaian visual saja; kesegaran dan keamanan daging tidak dapat dipastikan dari foto.") if daging else cls._saran(skor)
         return {"status": "ok", "skor": round(skor, 1),
                 "skor_min": round(rentang[0], 1), "skor_maks": round(rentang[1], 1),
-                "label": cls._label(skor), "jenis": jenis, "keyakinan": keyakinan,
-                "saran": cls._saran(skor), "ciri": ciri or None,
+                "label": label, "jenis": jenis, "keyakinan": keyakinan,
+                "saran": saran, "ciri": ciri or None,
                 "alasan": None, "sumber": sumber, "model": model,
                 "prompt_versi": prompt_versi}
 

@@ -1,4 +1,4 @@
-"""Pydantic schemas untuk SegerScan API."""
+"""Pydantic schemas untuk SegarScan API."""
 
 from typing import Optional
 
@@ -11,9 +11,10 @@ class PredictionResponse(BaseModel):
     skor_min: Optional[float] = None
     skor_maks: Optional[float] = None
     label: str = Field(..., description="Kategori kesegaran")
-    jenis: str = Field(..., description="Jenis sayuran yang terdeteksi")
+    jenis: str = Field(..., description="Jenis bahan dapur yang terdeteksi")
     keyakinan: Optional[str] = Field(None, description="rendah / sedang / tinggi")
     saran: Optional[str] = None
     ciri: Optional[str] = None
     alasan: Optional[str] = Field(None, description="Alasan jika foto ditolak")
     sumber: Optional[str] = Field(None, description="model_gemini")
+    jenis_lokal: Optional[dict] = Field(None, description="Prediksi jenis lokal eksperimental; bukan skor kesegaran")

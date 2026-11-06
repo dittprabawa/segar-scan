@@ -1,248 +1,374 @@
-# SegerScan
+# SegarScan — Cek Bahan Dapurmu
 
-SegerScan memperkirakan kesegaran sayuran dari foto menggunakan Gemini. Pengguna mengambil foto lewat kamera atau mengunggah gambar, lalu menerima jenis sayur, skor 0–100, rentang skor, kategori, tingkat keyakinan, dan saran pembelian.
+SegarScan menilai kondisi visual **sayuran dan daging mentah** dari foto. Backend FastAPI menggunakan Gemini untuk penilaian visual, sedangkan model ML lokal memberikan prediksi jenis bahan sebagai pembanding eksperimental. Frontend kamera dan unggah foto disajikan oleh backend yang sama.
 
-Aplikasi sudah di-deploy ke Vercel dengan HTTPS. Backend menggunakan FastAPI dan menyajikan frontend dari server yang sama. Penilai aktif hanya Gemini; training dan fallback model lokal tidak digunakan lagi.
+Foto yang diproses disimpan ke antrean **pending** untuk ditinjau manusia. Setelah verifikasi, foto dapat digunakan untuk melatih ulang model jenis lokal. Penambahan atau verifikasi foto tidak otomatis melatih model.
 
-Hasil merupakan perkiraan visual, bukan jaminan keamanan pangan. Foto yang lolos pemeriksaan awal dikirim ke layanan Gemini untuk dinilai.
+## Cakupan penilaian
 
-## Alur aplikasi
+- Satu jenis bahan per foto; boleh beberapa buah, ikat, atau potongan dari jenis yang sama.
+- Mendukung sayuran serta daging mentah seperti ayam, sapi, kambing, dan babi. Masakan dan daging olahan belum didukung.
+- Prompt aktif **p4** memeriksa tanda pembusukan sebelum memberi skor. Kerusakan pada sebagian objek tidak boleh tertutupi oleh bagian lain yang tampak segar.
+- Jika model melaporkan pembusukan jelas, backend membatasi skor dan rentang ke 0–19 serta menampilkan **“Indikasi busuk”**. Jika meragukan, aplikasi meminta foto dekat tanpa memberi skor.
+- Daging memakai label kondisi visual, bukan “layu”, “segera olah”, atau saran “layak dibeli”.
 
-```text
-Kamera / unggah foto
-  → POST /predict
-  → pemeriksaan ukuran, format, orientasi EXIF, dan jumlah piksel
-  → pemeriksaan gelap, terlalu terang/silau, dan buram
-  → Gemini: beberapa model dipanggil bersamaan dengan pembatasan slot
-  → hasil pertama yang berhasil dipakai
-  → backend menyusun kategori dan saran
-  → frontend menampilkan hasil atau alasan penolakan
-```
+Skor 0–100 adalah perkiraan visual dan aturan kategori aplikasi, bukan persentase keamanan pangan. Akurasi pengenalan jenis dan pembusukan pada foto lapangan belum divalidasi. Bagian bahan yang tertutup tidak dapat dinilai dari foto.
 
-Jika penilai gagal, backend mengembalikan 503. Saat semua model sibuk atau terkena pembatasan kuota, sebagian alur mengembalikan status `ditolak` dengan pesan untuk mencoba lagi. Tidak ada fallback ke model lokal.
+## Menjalankan lokal
 
-## Menjalankan secara lokal
-
-Buat virtual environment dengan Python yang kompatibel dengan dependensi di `requirements.txt`:
+Jalankan dari root proyek. Alur penyimpanan dataset menggunakan `fcntl`, sehingga saat ini memerlukan macOS/Linux; Windows native belum didukung (gunakan lingkungan Linux seperti WSL).
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.txt
-python -m pip install pytest
+python -m pip install -r requirements-dev.txt
 ```
 
-Di Windows, aktifkan environment dengan `.venv\Scripts\activate`.
-
-Buat `.env` di folder utama proyek:
+Buat `.env` di root proyek:
 
 ```dotenv
 GEMINI_API_KEY=isi_kunci_sendiri
 USE_VLM=1
-# Isi nama model yang tersedia untuk akunmu, pisahkan dengan koma.
-# GEMINI_MODEL=nama_model_pertama,nama_model_kedua
+# Isi model yang mendukung gambar dan tersedia untuk akunmu.
+# GEMINI_MODEL=nama_model_utama,nama_model_cadangan
+DATASET_CAPTURE=1
+USE_LOCAL_JENIS=1
 ```
 
-Periksa akses API dan daftar model:
+Periksa akses dan daftar model (perintah ini menghubungi Gemini), lalu mulai server:
 
 ```bash
 python cek_gemini.py
+python -m uvicorn backend.app.main:app --reload
 ```
 
-Perintah tersebut menghubungi API Gemini. Pilih model yang mendukung input gambar, lalu atur `GEMINI_MODEL` bila diperlukan. Nama model bawaan di kode tidak menjamin model tersebut tersedia untuk akunmu.
+| Alamat | Fungsi |
+|---|---|
+| [Halaman aplikasi](http://127.0.0.1:8000/ui/) | Kamera dan unggah foto |
+| [Dokumentasi API](http://127.0.0.1:8000/docs) | Kontrak API interaktif |
+| [Health](http://127.0.0.1:8000/health) | Kesiapan konfigurasi penilai |
 
-Jalankan aplikasi dari folder utama:
+`/` mengarah ke `/ui/`. Restart server setelah perubahan `.env`, dan refresh halaman setelah perubahan frontend. `--reload` digunakan untuk pengembangan. Kamera pada HP memerlukan konteks browser yang mengizinkan kamera, biasanya HTTPS, serta izin pengguna.
+
+## Alur scan dan dataset
+
+```text
+Kamera / unggah foto → POST /predict
+  → validasi ukuran, format, EXIF, dan jumlah piksel
+  → pemeriksaan kualitas foto → penilaian Gemini
+  → penyusunan skor, kategori, dan saran
+  → prediksi jenis ML lokal sebagai pembanding jika hasil penilaian berhasil
+  → hasil di frontend + penyimpanan foto dan metadata pending
+
+Pending → verifikasi manusia → CSV terverifikasi
+  → perintah training → model jenis lokal → pembanding pada scan berikutnya
+```
+
+Model Gemini dipanggil bertahap: model utama lebih dahulu, lalu cadangan ketika diperlukan, dengan pembatasan slot. Model lokal tidak menggantikan jenis atau skor Gemini dan bukan fallback kesegaran; scan tetap memerlukan Gemini.
+
+## Dataset pending dan verifikasi
+
+### Lokasi data
+
+| Lokasi | Isi |
+|---|---|
+| `data/pending/<ID>.img` | Byte gambar yang diterima server; dapat dibuka dengan Pillow |
+| `data/pending/<ID>.json` | Prediksi sementara, waktu, ID request, status `pending`/`verified`, dan label manusia setelah verifikasi |
+| `scripts/dataset.csv` | Label manusia untuk training/evaluasi |
+| `scripts/images/<ID>.img` | Foto yang telah dimasukkan ke dataset |
+
+ID berdasarkan SHA-256 isi foto. Unggahan dengan byte identik tidak membuat duplikat dan mempertahankan prediksi pertama. Foto terverifikasi tetap disimpan di antrean sebagai riwayat agar unggahan ulang tidak menjadi pending lagi. Foto yang dikompresi ulang dapat memiliki ID berbeda.
+
+Foto valid yang mencapai tahap penilaian disimpan, termasuk hasil ditolak dan kegagalan penilai. Request yang ditolak lebih awal—model belum siap, rate limit, gambar rusak, atau terlalu besar—tidak disimpan. Jika penyimpanan gagal, respons prediksi tetap dikembalikan dan kegagalan dicatat di log.
+
+### Lihat dan verifikasi satu foto
 
 ```bash
-uvicorn backend.app.main:app --reload
+python -m scripts.review_dataset list
+python -m scripts.review_dataset verify ID_FOTO --jenis bayam --status ok --perangkat "Macbook" --split dev
 ```
 
-| Alamat lokal | Fungsi |
-|---|---|
-| http://127.0.0.1:8000/ui/ | Halaman kamera dan unggah foto |
-| http://127.0.0.1:8000/docs | Dokumentasi API interaktif |
-| http://127.0.0.1:8000/health | Kesiapan penilai |
-| http://127.0.0.1:8000/ | Otomatis mengarah ke `/ui/` |
+Ganti `ID_FOTO` dengan ID lengkap dari daftar. Periksa gambar dan masukkan jenis sebenarnya dari pengamatan manusia, bukan sekadar menyalin prediksi Gemini.
 
-Restart server setelah mengubah `.env`. Opsi `--reload` hanya untuk pengembangan. Akses kamera dari HP memerlukan HTTPS dan izin kamera.
+**`--status ok` berarti foto dapat dinilai, bukan bahannya segar.** Foto wortel busuk yang jelas tetap dapat berstatus `ok`. `ditolak` digunakan untuk foto yang tidak layak dinilai. Label kondisi seperti `segar`, `layu`, atau `busuk` belum tersedia dalam verifikasi; dataset ini belum menjadi target training kesegaran.
+
+### Verifikasi massal per jenis
+
+Fitur admin tersedia lewat CLI; belum ada halaman admin web.
+
+```bash
+python -m scripts.review_dataset groups
+python -m scripts.review_dataset list --jenis "daging ayam"
+python -m scripts.review_dataset verify-group --jenis "daging ayam" --status ok --perangkat "Macbook" --split dev --dry-run
+python -m scripts.review_dataset verify-group --jenis "daging ayam" --status ok --perangkat "Macbook" --split dev
+```
+
+Ganti jenis dengan nama kelompok seperti `daging sapi`, `bayam`, atau `wortel`. Kelompok berasal dari **prediksi sementara**, sehingga anggotanya perlu diperiksa sebelum disetujui. Kapital dan spasi dinormalisasi, tetapi `ayam` dan `daging ayam` tetap kelompok berbeda.
+
+| Opsi | Fungsi |
+|---|---|
+| `--dry-run` | Menampilkan ID terpilih tanpa perubahan |
+| `--exclude ID_FOTO` | Melewati satu foto; dapat diulang |
+| `--label bayam` | Memberi label manusia berbeda dari nama kelompok prediksi |
+| `--dataset /path/dataset.csv` | Menentukan dataset tujuan |
+
+Status, perangkat, label, dan split berlaku untuk semua foto terpilih. Pisahkan batch bila metadata berbeda. Kelompok `unknown` ditinjau per foto. Foto yang sudah verified dilewati dan unggahan baru setelah proses dimulai tidak otomatis ikut diverifikasi.
+
+Jika sebagian foto gagal, proses melanjutkan foto lainnya dan melaporkan ID berhasil/gagal; kode keluar menjadi 1. Verifikasi massal bukan transaksi seluruh kelompok. Perintah dapat diulang untuk sisa pending setelah masalah diperbaiki.
+
+### Menambah atau mengoreksi dataset secara manual
+
+```bash
+python -m scripts.update_dataset --foto /path/bayam.jpg --jenis bayam --status ok --perangkat "Macbook" --split dev
+```
+
+CSV kosong diinisialisasi otomatis. Foto divalidasi, disalin, dan ditambahkan; foto identik memperbarui baris yang sama. Baris lama dan kolom tambahan dipertahankan. Untuk mengoreksi jenis foto yang sudah verified, gunakan foto `data/pending/ID_FOTO.img` pada perintah ini. **Koreksi melalui `update_dataset` hanya memperbarui CSV; label riwayat JSON tidak ikut berubah.** Perintah `verify` sendiri menolak foto yang sudah verified.
+
+Kolom CSV: `filename`, `human_label`, `device_source`, `file`, `jenis_benar`, `split`. Gunakan label jenis konsisten seperti `daging ayam`. Split `dev` digunakan untuk latihan/pengembangan dan `test` untuk pengujian terpisah. Memindahkan split pada foto yang sama memperbarui baris, bukan menggandakannya.
+
+## Training dan evaluasi ML lokal
+
+Setelah satu batch verifikasi selesai atau label dikoreksi:
+
+```bash
+python -m scripts.train_jenis
+```
+
+Training membaca `scripts/dataset.csv`, menggunakan `jenis_benar` sebagai target dan hanya mengambil baris `human_label=ok`. Foto pending tidak dibaca. Minimal dua kelas diperlukan pada split `dev`.
+
+| Berkas | Fungsi |
+|---|---|
+| `models/jenis.json` | Model klasifikasi jenis lokal |
+| `models/jenis.report.json` | Jumlah per kelas, hasil prediksi test, dan akurasi test |
+
+Model merupakan baseline nearest-neighbor dengan histogram warna, rata-rata warna spasial, dan tekstur tepi; dependensinya sudah tersedia di `requirements.txt`. Tidak diperlukan PyTorch atau `requirements-train.txt` untuk baseline ini. `ml/predict.py` dan `models/segarscan.pt` adalah eksperimen lama dan tidak digunakan oleh alur scan aktif.
+
+Server memuat model ketika diperlukan dan memuat ulang saat berkas model berubah. Frontend menampilkan **“ML lokal (eksperimental)”**, jumlah foto latihan, dan pemberitahuan jika prediksi berbeda dari Gemini. Model hilang/rusak tidak menggagalkan scan. Training tidak berjalan otomatis saat verifikasi.
+
+Batasan model:
+
+- Kemiripan warna atau latar dapat menyesatkan; kelas di luar data latihan juga dipetakan ke kelas terdekat.
+- Jarak hasil model bukan probabilitas atau tingkat keyakinan terkalibrasi.
+- Split `test` tidak digunakan saat training. Jika kosong, `akurasi_test` bernilai `null`, bukan bukti akurasi tinggi.
+- Duplikat byte ditolak, termasuk lintas split. Pisahkan foto objek/sesi yang sama secara manual meskipun byte berbeda agar tidak bocor ke test.
+- Model mengenali jenis bahan, bukan kondisi kesegaran. Training kesegaran memerlukan label kondisi manusia dan model terpisah.
+
+Laporan training yang tersedia saat pembaruan ini memuat **18 foto, 9 kelas, dan 0 foto test**. Gunakan laporan hasil retraining terbaru sebagai acuan; kemampuan generalisasi belum diketahui.
+
+### Membandingkan prompt Gemini
+
+```bash
+python -m scripts.evaluasi_jenis --dataset scripts/dataset.csv --split test --model NAMA_MODEL --kandidat /path/prompt_kandidat.txt --output /path/laporan-baru
+```
+
+Siapkan berkas tambahan prompt kandidat dan folder output yang belum ada. Perintah ini menghubungi Gemini dan membandingkan identifikasi jenis baseline/kandidat pada foto berlabel. Evaluasi tidak melatih model lokal. Baris format lama tanpa split tidak masuk evaluasi jenis.
 
 ## Konfigurasi
 
-Konfigurasi lokal dibaca dari `.env`; deployment menggunakan environment variables proyek Vercel. Jangan memasukkan kunci API ke frontend atau Git.
+Server membaca `.env` melalui `backend/app/main.py`. Untuk menjalankan CLI dataset dengan direktori khusus, gunakan `--pending-dir /path/pending` **sebelum** subcommand, atau ekspor `DATASET_PENDING_DIR` di shell; CLI review tidak otomatis memuat `.env`.
 
-| Variabel | Bawaan di kode | Fungsi |
+| Variabel | Default | Fungsi |
 |---|---|---|
-| `GEMINI_API_KEY` | Kosong | Kunci akses Gemini |
-| `USE_VLM` | `1` | `1` mengaktifkan Gemini; dinonaktifkan berarti tidak ada penilai |
-| `GEMINI_MODEL` | `gemini-3.1-flash-lite,gemini-3.8-flash` | Daftar model yang dipanggil bersamaan |
-| `TOTAL_TIMEOUT` | `25` | Anggaran waktu inferensi, dalam detik |
-| `VLM_TIMEOUT` | `20` | Timeout panggilan per model, dalam detik |
-| `MAX_GEMINI_BERSAMAAN` | `3` | Batas permintaan yang memasuki alur Gemini per proses |
-| `GATE_TUNGGU` | `2` | Waktu menunggu slot permintaan, dalam detik |
-| `VLM_MAX_BERSAMAAN` | `3` | Batas panggilan model Gemini bersamaan per proses |
-| `VLM_TUNGGU_SLOT` | `5` | Waktu menunggu slot panggilan model, dalam detik |
-| `VLM_COOLDOWN_429` | `30` | Jeda model setelah terkena 429, dalam detik |
-| `VLM_UKURAN_GAMBAR` | `768` | Batas sisi terpanjang gambar yang dikirim ke Gemini |
-| `VLM_KUALITAS_JPEG` | `82` | Kualitas JPEG yang dikirim ke Gemini |
+| `GEMINI_API_KEY` | Kosong | Kunci Gemini; simpan di backend |
+| `USE_VLM` | `1` | Mengaktifkan penilai Gemini |
+| `GEMINI_MODEL` | Lihat `_daftar_model()` di `vlm.py` | Nama model utama/cadangan; sesuaikan akses akun |
+| `DATASET_CAPTURE` | `1` | Penyimpanan otomatis pending; `0` menonaktifkan |
+| `DATASET_PENDING_DIR` | `data/pending` di root proyek | Lokasi penyimpanan pending |
+| `USE_LOCAL_JENIS` | `1` | Pembanding jenis lokal; `0` menonaktifkan |
+| `LOCAL_JENIS_MODEL` | `models/jenis.json` di root proyek | Model jenis lokal |
+| `ALLOWED_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Daftar origin CORS dipisahkan koma |
+| `TRUSTED_PROXIES` | `127.0.0.1` | Proxy yang dipercaya untuk header IP |
+| `RATE_LIMIT` | `10/minute` | Batas prediksi per IP |
+| `MAX_PIXELS` | `25000000` | Batas resolusi unggahan |
+| `TOTAL_TIMEOUT` / `VLM_TOTAL_DETIK` | `25` / `10` | Anggaran waktu inferensi / alur model |
+| `VLM_TIMEOUT` / `VLM_JEDA_CADANGAN` | `20` / `4` | Timeout per model / jeda model cadangan |
+| `MAX_GEMINI_BERSAMAAN` / `GATE_TUNGGU` | `3` / `2` | Slot permintaan / tunggu slot (detik) |
+| `VLM_MAX_BERSAMAAN` / `VLM_TUNGGU_SLOT` | `3` / `5` | Slot panggilan model / tunggu slot (detik) |
+| `VLM_COOLDOWN_429` | `30` | Jeda model setelah 429 (detik) |
+| `VLM_UKURAN_GAMBAR` / `VLM_KUALITAS_JPEG` | `768` / `82` | Ukuran sisi maksimum dan kualitas gambar untuk Gemini |
 | `VLM_MAX_TOKEN_JAWABAN` | `1024` | Batas token jawaban |
-| `MAX_PIXELS` | `25000000` | Batas jumlah piksel gambar |
-| `RATE_LIMIT` | `10/minute` | Batas permintaan prediksi per IP |
-| `QC_GELAP` | `35` | Batas bawah rata-rata kecerahan |
-| `QC_SILAU` | `240` | Batas atas rata-rata kecerahan |
-| `QC_AREA_TERANG` | `0.65` | Proporsi piksel berkecerahan ≥240; diperiksa saat rata-rata ≥220 |
-| `QC_BURAM` | `15` | Ambang variansi Laplacian untuk ketajaman |
+| `QC_GELAP` / `QC_SILAU` / `QC_AREA_TERANG` / `QC_BURAM` | `35` / `240` / `0.65` / `15` | Ambang pemeriksaan kualitas gambar |
 
-Batas file di aplikasi adalah 5 MB. `TOTAL_TIMEOUT` belum merupakan jaminan keras waktu seluruh request: upload, pemrosesan gambar, dan waktu tunggu tambahan juga memerlukan waktu. Target maksimal 30 detik masih perlu diuji dan diperketat.
+Batas unggahan 5 MB. Timeout model bukan jaminan keras durasi seluruh request, karena unggahan, antrean, decode, dan penyimpanan juga memerlukan waktu.
 
-## API
+## API dan log
 
 ### `POST /predict`
 
-Kirim `multipart/form-data` dengan field `file`:
-
 ```bash
-curl -X POST http://127.0.0.1:8000/predict -F 'file=@foto_sayur.jpg'
+curl -X POST http://127.0.0.1:8000/predict -F 'file=@foto_bahan.jpg'
 ```
 
-Contoh respons berhasil:
-
-```json
-{
-  "status": "ok",
-  "skor": 85.0,
-  "skor_min": 80.0,
-  "skor_maks": 90.0,
-  "label": "Sangat segar",
-  "jenis": "bayam",
-  "keyakinan": "tinggi",
-  "saran": "Layak dibeli",
-  "ciri": "Daun tampak hijau dan tegak.",
-  "alasan": null,
-  "sumber": "gemini"
-}
-```
-
-Foto yang tidak layak dinilai mendapat HTTP 200 dengan `status: "ditolak"`, skor `null`, dan pesan pada `alasan`. Frontend harus memeriksa `status`, bukan hanya kode HTTP.
+Respons memuat `status`, `jenis`, `skor`, `skor_min`, `skor_maks`, `label`, `keyakinan`, `saran`, `ciri`, `alasan`, `sumber`, dan `jenis_lokal`. Jika model lokal tersedia pada hasil yang berhasil, `jenis_lokal` memuat `jenis`, `jarak`, `metode`, `eksperimental`, dan `jumlah_latih`; jika tidak, bernilai `null`.
 
 | HTTP | Arti |
 |---|---|
-| 200 | Hasil prediksi atau penolakan penilaian |
-| 400 | File bukan gambar atau gambar rusak |
-| 413 | File terlalu besar atau jumlah piksel melebihi batas |
-| 422 | Field unggahan tidak sesuai, misalnya `file` tidak dikirim |
-| 429 | Rate limit terlampaui; disertai `Retry-After: 60` |
-| 503 | Penilai tidak tersedia atau gagal; disertai `Retry-After: 30` |
+| 200 | Prediksi berhasil atau penilaian ditolak; periksa `status` JSON |
+| 400 | Gambar rusak atau file bukan gambar |
+| 413 | Ukuran file/resolusi melebihi batas |
+| 422 | Field unggahan tidak sesuai |
+| 429 | Rate limit; `Retry-After: 60` |
+| 503 | Penilai belum siap atau gagal; `Retry-After: 30` |
 
-Error yang ditangani aplikasi menggunakan bentuk `{"detail": "pesan"}`. Error tak terduga atau error dari platform hosting belum tentu mengikuti bentuk tersebut.
+`status=ditolak` memiliki skor `null` dan alasan. Penolakan juga dapat berasal dari ketidakpastian penilaian atau layanan sibuk. Error aplikasi yang ditangani memakai `{"detail": "pesan"}`; error tak terduga/platform belum tentu memakai bentuk tersebut.
 
 ### `GET /health`
 
-Contoh ketika Gemini diaktifkan dan kunci terisi:
+Memuat `status`, versi aplikasi `1.2.0`, `versi_prompt` (`p4`), `gemini`, `model_lokal`, `siap`, dan `statistik`. `gemini`/`siap` memeriksa konfigurasi, bukan validitas kunci, kuota, atau koneksi. Endpoint tidak memanggil Gemini.
 
-```json
-{
-  "status": "ok",
-  "versi": "1.2.0",
-  "versi_prompt": "p2",
-  "gemini": true,
-  "model_lokal": false,
-  "siap": true
-}
+`model_lokal` adalah field lama untuk model kesegaran dan tetap `false`; field ini **bukan indikator model jenis** `models/jenis.json`. Objek `statistik` menghitung request `POST /predict`, penolakan penilaian, error HTTP, persentase penolakan, dan rata-rata durasi. Termasuk error validasi, rate limit, batas ukuran, dan error tak terduga. Statistik tersimpan per proses sejak startup; membuka `/health` tidak menaikkan penghitung.
+
+Middleware mencatat ID request, IP, metode, path, status, dan durasi, serta menambahkan `X-Request-ID`. Uvicorn juga mencatat akses sehingga satu request bisa menghasilkan dua baris log.
+
+## Deployment dan penyimpanan bersama
+
+Konfigurasi repository untuk Vercel terdapat pada `vercel.json`, dengan entrypoint `index.py`. Status deployment aktif menggunakan dependensi root `requirements.txt` dan environment variables pada lingkungan Vercel.
+
+### Alur Sinkronisasi Online (Vercel & Laptop)
+
+Untuk alur deployment online, foto pending tidak disimpan di Git repository (`data/pending/` dan `scripts/images/` tetap diabaikan Git). SegarScan mengintegrasikan **penyimpanan bersama online** agar foto pending yang diunggah pengguna di Vercel dapat langsung masuk ke cloud storage dan diverifikasi oleh admin di laptop:
+
+```
+[ Pengguna Scan di Vercel ]
+           │
+           ▼
+[ Penyimpanan Online ] (Supabase Storage / Cloudflare R2 / AWS S3 / Vercel Blob)
+           │
+           ▼
+[ Verifikasi Admin di Laptop ] (`python scripts/review_dataset.py verify` / `sync`)
+           │ (foto masuk scripts/images/ & label masuk scripts/dataset.csv lokal)
+           ▼
+[ Retraining Model Jenis ] (`python scripts/train_jenis.py` di laptop)
+           │ (menghasilkan models/jenis.json)
+           ▼
+[ Push Model ke GitHub ] -> Vercel auto-deploy model terbaru tanpa membawa ribuan foto
 ```
 
-`gemini: true` hanya menunjukkan konfigurasi kunci terisi dan Gemini diaktifkan; endpoint ini tidak menguji validitas kunci, kuota, atau koneksi. Field `model_lokal` masih dipertahankan untuk kompatibilitas dan bernilai `false`.
+### Pilihan Penyimpanan Cloud
 
-`versi` berasal dari versi aplikasi FastAPI, sama dengan dokumentasi OpenAPI. `versi_prompt` berasal dari `PROMPT_VERSION` di `backend/app/services/vlm.py`; `p2` menandai prompt saat ini. Naikkan nilainya setiap kali isi prompt diubah. Endpoint ini tidak memanggil Gemini atau mengembalikan kunci API.
+1. **Supabase (Rekomendasi untuk Vercel)**:
+   - Object Storage bucket `pending` untuk file foto (`.img`) dan cadangan JSON.
+   - Tabel PostgreSQL `pending_scans` untuk metadata terstruktur (skema tersedia di `scripts/supabase_schema.sql`).
+   - Variabel lingkungan: `SUPABASE_URL`, `SUPABASE_KEY` (service role atau anon), `SUPABASE_STORAGE_BUCKET`, `SUPABASE_TABLE`.
+2. **Cloudflare R2 / AWS S3**:
+   - S3-compatible Object Storage dengan gratis 10 GB dan bebas biaya transfer (egress) di Cloudflare R2.
+   - Menggunakan pure Python SigV4 via `httpx` (tanpa perlu menambah dependensi berat di Vercel).
+   - Variabel lingkungan: `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_ENDPOINT_URL`, `S3_REGION`.
+3. **Vercel Blob**:
+   - Terintegrasi langsung dalam 1 klik di dashboard Vercel.
+   - Variabel lingkungan: `BLOB_READ_WRITE_TOKEN`.
+4. **Penyimpanan Lokal**:
+   - Digunakan otomatis saat aplikasi berjalan lokal tanpa kredensial cloud (`data/pending/`).
 
-## Deployment dan operasi Vercel
+### Perintah Admin untuk Antrean Pending
 
-Repository menggunakan `index.py` sebagai entrypoint yang mengekspor aplikasi dari `backend/app/main.py`. Konfigurasi routing ada di `vercel.json`, dan dependensi runtime ada di `requirements.txt`.
+```bash
+# Lihat informasi storage backend yang aktif
+python scripts/review_dataset.py info
 
-Untuk memperbarui deployment:
+# Lihat daftar foto pending di cloud / lokal
+python scripts/review_dataset.py list
 
-1. Jalankan tes lokal sebelum mengirim perubahan.
-2. Atur environment variables untuk lingkungan deployment yang dituju, terutama `GEMINI_API_KEY`, `USE_VLM`, dan `GEMINI_MODEL`.
-3. Deploy revisi terbaru melalui alur deployment proyek Vercel. Buat deployment baru setelah perubahan environment variables agar konfigurasi diterapkan.
-4. Buka `/health` dan `/ui/` pada domain deployment.
-5. Uji satu foto normal dan satu foto yang seharusnya ditolak, lalu periksa log runtime deployment tersebut jika hasilnya bermasalah.
+# Lihat rekap jumlah pending per jenis makanan
+python scripts/review_dataset.py groups
 
-Gunakan log runtime untuk melihat kegagalan Gemini, nama model, timeout, atau pesan antrean penuh. Log saat ini belum menyediakan ID dan durasi lengkap untuk setiap permintaan.
+# (Opsional) Unduh semua foto pending dari cloud ke data/pending/ laptop untuk dicek visual
+python scripts/review_dataset.py sync
 
-Status operasional yang masih perlu diverifikasi:
+# Verifikasi foto langsung dari cloud (otomatis diunduh ke scripts/images/ & dicatat ke scripts/dataset.csv)
+python scripts/review_dataset.py verify <ID_FOTO> --jenis "bayam" --status ok --perangkat "iPhone"
 
-- IP asli pengguna di belakang proxy Vercel untuk rate limit.
-- Timeout dan tampilan pesan error pada deployment nyata.
-- Pengujian beberapa permintaan bersamaan dan foto dari HP.
+# Verifikasi massal satu kelompok
+python scripts/review_dataset.py verify-group --jenis "bayam" --status ok --perangkat "iPhone"
 
-Rate limit, semaphore, dan jeda model disimpan dalam memori tiap proses, bukan pembatas global lintas instance Vercel. CORS saat ini masih terbuka untuk semua asal.
+# Latih ulang model setelah ada data baru
+python scripts/train_jenis.py
+
+# Push model baru ke GitHub untuk auto-deploy Vercel
+git add models/jenis.json models/jenis.report.json
+git commit -m "Update model jenis setelah verifikasi dataset baru"
+git push
+```
+
+Foto pending dan `scripts/images/` dikecualikan dari Git dan tidak disajikan sebagai endpoint publik. Batas default adalah 512 MB untuk pending dan 2 GB untuk foto/CSV terverifikasi. Pending yang belum diverifikasi dibersihkan setelah 30 hari; data verified dipertahankan. Data gambar yang dikirim ke Gemini mengikuti alur layanan penilai. Rate limiter, semaphore, dan jeda model berlaku per proses, bukan global lintas instance.
 
 ## Pengujian
 
 ```bash
-python -m pytest -q
+python -m pytest -q -W error
 ```
 
-Tes saat ini tidak memanggil Gemini sungguhan. Cakupannya meliputi foto gelap, buram, terlalu terang, objek dengan latar putih, orientasi EXIF, batas piksel, file bukan gambar, perhitungan sisa waktu, serta antrean Gemini penuh dan pemulihan slot.
+Untuk modul dataset, ML, dan penilaian yang baru diintegrasikan:
 
-Tes API mencakup prediksi sukses, penolakan Gemini dan filter kualitas, kegagalan/timeout Gemini, penilai nonaktif, HTTP 400/413/422/429/503, handler 500, serta kesiapan dan versi pada `/health`. Rate limiter direset antartes; pengujian 429 mengirim permintaan sampai batas aktual tercapai. Respons 429 dan 503 diperiksa header `Retry-After`-nya. Tes yang lolos belum membuktikan akurasi prediksi, target kecepatan, atau perilaku deployment.
+```bash
+python -m pytest tests/test_ml_jenis.py tests/test_review_group.py tests/test_dataset_pending.py tests/test_update_dataset.py tests/test_evaluasi.py tests/test_pembusukan.py tests/test_ketahanan.py tests/test_quality.py -q
+```
+
+Pengujian tersebut menggunakan data sementara dan respons Gemini tiruan, tanpa panggilan API. Pemeriksaan terakhir seluruh suite Python: 85 tes lolos, termasuk endpoint API, statistik, respons error, dataset, dan ML lokal. TestClient menggunakan `httpx2` dari `requirements-dev.txt`. Adapter `backend/app/slowapi_compat.py` mengarahkan pemeriksaan coroutine SlowAPI 0.1.10 ke `inspect.iscoroutinefunction` tanpa mengubah stdlib atau memfilter warning. Tes otomatis tidak membuktikan akurasi pada foto lapangan atau keberhasilan koneksi Gemini/deployment nyata.
+
+Jika Node.js tersedia, tes kamera dapat dijalankan dengan:
+
+```bash
+node --test tests/frontend/camera.test.cjs
+```
 
 ## Penanganan masalah
 
-| Gejala | Pemeriksaan dan tindakan |
+| Gejala | Tindakan |
 |---|---|
-| `/health` menunjukkan `gemini: false` | Periksa `GEMINI_API_KEY` dan `USE_VLM=1`; restart lokal atau buat deployment baru |
-| `/health` siap tetapi prediksi gagal | Periksa log runtime; kesiapan konfigurasi tidak membuktikan kunci valid atau kuota tersedia |
-| Model Gemini tidak ditemukan | Jalankan `python cek_gemini.py` dengan konfigurasi yang sesuai, perbarui `GEMINI_MODEL`, lalu restart/deploy ulang |
-| Pesan penilai ramai atau kuota habis | Tunggu jeda model, periksa kuota dan log; bila tersedia, gunakan model lain yang dapat diakses akun |
-| HTTP 429 dari aplikasi | Tunggu sesuai `Retry-After`; jika pengguna berbeda ikut dibatasi, periksa pembacaan IP di belakang proxy |
-| HTTP 503 | Periksa kunci, akses model, koneksi, timeout, dan kapasitas slot; tidak ada model lokal sebagai cadangan |
-| Permintaan lama atau gagal di Vercel | Periksa waktu dan error di log deployment serta batas runtime deployment; cocokkan dengan konfigurasi timeout aplikasi |
-| Foto ditolak karena terlalu terang | Kurangi pencahayaan/pantulan dan foto ulang agar warna serta tekstur terlihat |
-| Kamera tidak terbuka di HP | Pastikan HTTPS, izin kamera aktif, atau gunakan unggah foto |
-| Perubahan konfigurasi belum terlihat | Restart lokal atau buat deployment baru pada lingkungan Vercel yang tepat |
+| Server siap tetapi Gemini gagal | Periksa kunci, kuota, nama model, koneksi, dan log |
+| Foto pending tidak muncul | Periksa `DATASET_CAPTURE`, direktori, izin tulis, dan log; request mungkin ditolak sebelum penilaian |
+| CLI menampilkan antrean kosong | Cocokkan direktori CLI dengan `DATASET_PENDING_DIR` server |
+| Foto salah diverifikasi | Koreksi CSV melalui `update_dataset`, sinkronkan riwayat JSON bila diperlukan, lalu retrain |
+| Perubahan dataset belum memengaruhi ML | Jalankan `python -m scripts.train_jenis`; server memuat ulang model saat file berubah |
+| Hasil ML berbeda dari Gemini | Periksa foto dan label manusia; model lokal masih eksperimental |
+| `akurasi_test` bernilai `null` | Belum ada foto test; siapkan data uji terpisah dari latihan |
+| `/favicon.ico` atau konfigurasi Chrome DevTools 404 | Berkas opsional browser tidak tersedia; tidak mengganggu prediksi |
 
-## Struktur kode aktif
+## Struktur utama
 
 ```text
-backend/app/
-  main.py                 # Endpoint, rate limit, CORS, frontend statis
-  schemas.py              # Kontrak respons
-  services/
-    gambar.py             # Decode gambar, EXIF, batas piksel
-    quality.py            # Pemeriksaan kualitas lokal tanpa model ML
-    vlm.py                # Prompt dan panggilan Gemini
-    inference.py          # Alur penilaian, kategori, dan saran
-frontend/                 # Halaman, kamera, dan pengiriman foto
-tests/                   # Tes otomatis
-index.py                  # Entry point Vercel
-vercel.json               # Konfigurasi deployment
-requirements.txt          # Dependensi runtime
-cek_gemini.py             # Pemeriksaan akses dan daftar model
+backend/app/main.py                 # Endpoint, middleware, pending, integrasi jenis lokal
+backend/app/services/vlm.py         # Prompt p4 dan panggilan Gemini
+backend/app/services/inference.py   # Aturan hasil visual dan pembusukan
+backend/app/services/dataset_pending.py
+backend/app/services/jenis_lokal.py # Pemuat model dengan reload
+frontend/                          # Kamera, unggah, hasil scan
+ml/jenis.py                        # Fitur gambar dan baseline klasifikasi jenis
+scripts/review_dataset.py           # Daftar/verifikasi satu foto atau kelompok
+scripts/update_dataset.py           # Tambah/koreksi CSV
+scripts/train_jenis.py               # Training dan laporan test
+scripts/evaluasi_jenis.py            # Perbandingan prompt Gemini
+models/jenis.json                   # Model hasil training
+models/jenis.report.json            # Hasil evaluasi lokal
+scripts/dataset.csv                 # Label terverifikasi
+scripts/images/                    # Foto dataset; diabaikan Git
+data/pending/                      # Foto dan metadata review; diabaikan Git
+tests/                             # Pengujian otomatis
 ```
 
-Folder `ml/`, bobot dalam `models/`, dan berkas terkait training yang masih tersisa merupakan peninggalan eksperimen; tidak digunakan oleh alur prediksi aktif.
 
-## Pekerjaan lanjutan
+## Batas penyimpanan dan retensi
 
-- Batasi CORS ke frontend yang diizinkan dan verifikasi IP asli di Vercel.
-- Perketat deadline total, lengkapi error, dan tambah pengujian API/beban.
-- Tambahkan log berstruktur dan sertakan versi prompt pada log serta keluaran evaluasi.
-- Evaluasi Gemini terhadap penilaian manusia melalui CSV dan metrik akurasi.
-- Kalibrasi ambang kualitas dengan kumpulan foto dari beberapa HP.
-- Audit penanganan kunci dan privasi, termasuk perilaku unggahan sementara pada framework/hosting.
+```dotenv
+DATASET_PENDING_MAX_MB=512
+DATASET_VERIFIED_MAX_MB=2048
+DATASET_RETENTION_DAYS=30
+```
 
-Aplikasi tidak secara eksplisit menyimpan foto ke dataset. Namun unggahan diproses oleh framework/hosting dan gambar dikirim ke Gemini; jangan menyatakan bahwa seluruh alur tidak pernah menggunakan penyimpanan sementara.
+Semua nilai harus bilangan bulat positif. Kuota pending menghitung seluruh isi direktori (termasuk salinan foto verified); kuota verified menghitung folder `images` dan CSV tujuan. Kuota diperiksa dalam lock penulis dan menyediakan ruang untuk berkas baru/temporary. Jika penuh, penyimpanan baru ditolak tanpa menghapus data verified. Scan tetap memberikan hasil dan log mencatat kegagalan menyimpan. Batas terpisah ini bukan kuota total filesystem: model, laporan, log, temporary upload, dan direktori dataset alternatif tidak termasuk.
 
-## Statistik prediksi (BE14)
+Pembersihan pending berjalan saat lifecycle server dimulai, setiap satu jam selama server hidup, dan sebelum penyimpanan foto baru. Hanya pasangan gambar/JSON berstatus `pending` yang lebih tua dari masa simpan yang dihapus. Riwayat verified dan metadata rusak/tidak dikenal dipertahankan. Tidak ada proses cleanup ketika server mati.
 
-`GET /health` juga memuat objek `statistik`: `jumlah_permintaan`, `jumlah_ditolak`, `jumlah_error`, `persentase_ditolak`, dan `rata_rata_waktu_ms`.
+Pratinjau dan cleanup manual:
 
-Statistik menghitung request `POST /predict` yang telah selesai: penolakan adalah HTTP 200 dengan `status: ditolak`; error mencakup HTTP 400 ke atas, termasuk validasi, rate limit, dan kegagalan server. Rata-rata dihitung dari semua request tersebut sejak masuk middleware sampai respons disiapkan, bukan waktu jaringan pengguna. Membuka `/health` tidak menaikkan penghitung.
+```bash
+python -m scripts.cleanup_dataset
+python -m scripts.cleanup_dataset --apply
+```
 
-Penyimpanan statistik aman untuk akses bersamaan, tetapi hanya dalam memori satu proses. Di Vercel, setiap instance memiliki angka sendiri dan restart/cold start mengulang angka dari nol. Ini bukan statistik total seluruh deployment; agregasi permanen memerlukan penyimpanan bersama.
+CLI cleanup memuat `.env`. Default hanya pratinjau; `--apply` menjalankan penghapusan sesuai retensi. Backup dilakukan operator sesuai kebutuhan; fitur ini tidak menyediakan backup atau cloud storage.
 
-## Evaluasi identifikasi jenis (BE20)
+## Pemeriksaan keamanan
 
-Lihat `evaluasi/README.md` untuk menyiapkan dataset berlabel manusia dan membandingkan prompt aktif dengan kandidat melalui `python -m scripts.evaluasi_jenis`. Template dataset, kandidat prompt, serta laporan akurasi dan pasangan jenis yang tertukar sudah disediakan. Belum ada data evaluasi nyata atau bukti peningkatan akurasi; kandidat belum menggantikan prompt produksi.
-
-Prompt p2 menambahkan pemeriksaan ciri pembeda jenis dan penolakan saat identifikasi ambigu, menindaklanjuti laporan pengguna tentang bayam yang diprediksi caisim. Peningkatan akurasi belum dibuktikan dengan evaluasi foto berlabel.
+Lihat `SECURITY_AUDIT.md` untuk lingkup pemeriksaan, perubahan, hasil pengujian, dan risiko yang masih terbuka. Audit dependensi dapat diulang dengan `python -m pip_audit`; pemeriksaan mengirim nama/versi paket ke layanan advisori dan memerlukan jaringan. Backend tetap merupakan layanan scan publik tanpa autentikasi; CORS bukan kontrol autentikasi.

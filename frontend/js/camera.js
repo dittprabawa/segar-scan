@@ -38,9 +38,9 @@ async function startCamera() {
         cameraPlaceholder.hidden = true;
 
         cameraMessage.textContent =
-            "Dekatkan ke satu jenis sayur. Pastikan cahaya cukup.";
+            "Dekatkan ke satu jenis bahan dapur. Pastikan cahaya cukup.";
 
-        console.log("Kamera SegerScan berhasil aktif");
+        console.log("Kamera SegarScan berhasil aktif");
 
         return true;
 

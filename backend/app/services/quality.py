@@ -31,7 +31,7 @@ def cek_kualitas(image: Image.Image) -> Optional[str]:
     if m["kecerahan"] > SILAU or (
         m["kecerahan"] >= 220 and m["area_terang"] >= AREA_TERANG
     ):
-        return "Foto terlalu terang atau silau. Kurangi pencahayaan lalu foto ulang agar warna dan tekstur sayur terlihat."
+        return "Foto terlalu terang atau silau. Kurangi pencahayaan lalu foto ulang agar warna dan tekstur bahan terlihat."
     if m["ketajaman"] < BURAM:
         return "Foto buram. Tahan HP sebentar lalu foto ulang dari lebih dekat."
     return None

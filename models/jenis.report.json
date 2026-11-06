@@ -1,0 +1,18 @@
+{
+  "jumlah_latih": 18,
+  "jumlah_test": 0,
+  "per_jenis": {
+    "bawang merah": 2,
+    "bawang putih": 2,
+    "bayam": 2,
+    "daging ayam": 1,
+    "daging babi": 1,
+    "daging sapi": 1,
+    "kubis": 3,
+    "tomat": 3,
+    "wortel": 3
+  },
+  "akurasi_test": null,
+  "hasil_test": [],
+  "catatan": "Baseline eksperimental; dev untuk latihan, test tidak dipakai melatih. Bukan model kesegaran."
+}
