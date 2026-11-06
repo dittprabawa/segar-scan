@@ -27,49 +27,81 @@ class InferenceService:
     def siap(self) -> bool:
         return vlm.tersedia()
 
-    def predict(self, image: Image.Image) -> dict:
+    def predict(self, image: Image.Image, req_id: Optional[str] = None) -> dict:
+        """req_id: ID permintaan dari lapisan HTTP (opsional), dipakai di semua baris log."""
+        rid = req_id or "-"
+
         alasan = quality.cek_kualitas(image)
         if alasan:
-            return self._ditolak(alasan)
+            hasil = self._ditolak(alasan)
+            self._catat(rid, hasil, penilai="kualitas")
+            return hasil
 
         if vlm.tersedia():
             deadline = time.monotonic() + TOTAL_TIMEOUT
             if _gate.acquire(timeout=GATE_TUNGGU):
                 try:
-                    d = vlm.nilai(image, deadline=deadline)
+                    d = vlm.nilai(image, deadline=deadline, req_id=req_id)
                     nama_model = d.get("model")
+                    versi = d.get("prompt_versi")
                     if not d["valid"]:
-                        return self._ditolak(d["alasan"], model=nama_model)
-                    log.info("Dinilai Gemini model=%s", nama_model)
-                    return self._ok(
+                        hasil = self._ditolak(d["alasan"], model=nama_model, prompt_versi=versi)
+                        self._catat(rid, hasil, penilai="gemini", sibuk=bool(d.get("sibuk")))
+                        return hasil
+                    hasil = self._ok(
                         d["skor"], d["jenis"], "gemini",
                         (d["skor_min"], d["skor_maks"]), d["keyakinan"], d["ciri"],
-                        model=nama_model,
+                        model=nama_model, prompt_versi=versi,
                     )
+                    self._catat(rid, hasil, penilai="gemini")
+                    return hasil
                 except Exception as e:  # semua model gagal / waktu habis
-                    log.warning("Gemini gagal atau timeout: %s", str(e)[:200])
+                    log.warning("[%s] Gemini gagal atau timeout: %s", rid, str(e)[:200])
                 finally:
                     _gate.release()
             else:
-                log.warning("Antrean Gemini penuh")
+                log.warning("[%s] Antrean Gemini penuh", rid)
         raise RuntimeError("Tidak ada penilai yang tersedia")
 
     # --- pembantu -----------------------------------------------------
     @staticmethod
-    def _ditolak(alasan: str, model: Optional[str] = None) -> dict:
+    def _catat(rid: str, hasil: dict, penilai: str, sibuk: bool = False) -> None:
+        """BE12-13 dan BE17: satu baris ringkas hasil prediksi (tanpa isi gambar)."""
+        log.info(
+            "[%s] hasil status=%s skor=%s rentang=%s-%s jenis=%s keyakinan=%s model=%s "
+            "prompt=%s penilai=%s sibuk=%s%s",
+            rid,
+            hasil["status"],
+            hasil["skor"],
+            hasil["skor_min"],
+            hasil["skor_maks"],
+            hasil["jenis"],
+            hasil["keyakinan"],
+            hasil["model"],
+            hasil.get("prompt_versi"),
+            penilai,
+            sibuk,
+            f" alasan={hasil['alasan']!r}" if hasil["status"] == "ditolak" else "",
+        )
+
+    @staticmethod
+    def _ditolak(alasan: str, model: Optional[str] = None,
+                 prompt_versi: Optional[str] = None) -> dict:
         return {"status": "ditolak", "skor": None, "skor_min": None, "skor_maks": None,
                 "label": "Foto belum bisa dinilai", "jenis": "unknown",
                 "keyakinan": None, "saran": "Coba foto ulang.", "ciri": None,
-                "alasan": alasan, "sumber": None, "model": model}
+                "alasan": alasan, "sumber": None, "model": model,
+                "prompt_versi": prompt_versi}
 
     @classmethod
     def _ok(cls, skor, jenis, sumber, rentang, keyakinan, ciri,
-            model: Optional[str] = None) -> dict:
+            model: Optional[str] = None, prompt_versi: Optional[str] = None) -> dict:
         return {"status": "ok", "skor": round(skor, 1),
                 "skor_min": round(rentang[0], 1), "skor_maks": round(rentang[1], 1),
                 "label": cls._label(skor), "jenis": jenis, "keyakinan": keyakinan,
                 "saran": cls._saran(skor), "ciri": ciri or None,
-                "alasan": None, "sumber": sumber, "model": model}
+                "alasan": None, "sumber": sumber, "model": model,
+                "prompt_versi": prompt_versi}
 
     @staticmethod
     def _label(skor: float) -> str:
