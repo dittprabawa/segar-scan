@@ -248,8 +248,3 @@ Berikut tiga contoh hasil aplikasi: bahan yang dinilai segar, bahan dengan indik
 | Tidak bisa dinilai | **Foto belum bisa dinilai**, tanpa skor | Tanda pembusukan belum dapat dipastikan. Aplikasi meminta foto lebih dekat pada bagian bercak atau rusak, serta pemisahan objek yang kondisinya berbeda. |
 
 Angka persentase pada tampilan merupakan rentang perkiraan visual aplikasi, bukan persentase keamanan pangan. Status **belum bisa dinilai** berarti informasi visual belum cukup untuk memberikan penilaian; status ini tidak otomatis berarti bahan busuk atau jenisnya tidak dikenali.
-
-
-## Dokumentasi tambahan
-
-[Arsip dokumentasi sebelumnya](docs/README-sebelumnya.md) tersedia sebagai referensi historis. README ini menjadi acuan utama struktur submission.
