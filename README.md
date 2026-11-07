@@ -45,6 +45,31 @@ Berikut tampilan SegarScan pada iPhone dalam light theme dan dark theme, termasu
   </tr>
 </table>
 
+## Contoh hasil penilaian
+
+Berikut tiga contoh hasil aplikasi: bahan yang dinilai segar, bahan dengan indikasi pembusukan, dan foto yang belum bisa dinilai. Keterangan mengikuti hasil pada tangkapan layar, bukan label kebenaran untuk evaluasi model.
+
+<table>
+  <tr>
+    <th>Segar</th>
+    <th>Indikasi busuk</th>
+    <th>Belum bisa dinilai</th>
+  </tr>
+  <tr>
+    <td align="center" valign="top"><img src="docs/screenshots/hasil-segar.jpg" alt="Hasil scan wortel dengan rentang 65–80% dan label Segar" width="260"></td>
+    <td align="center" valign="top"><img src="docs/screenshots/hasil-indikasi-busuk.jpg" alt="Hasil scan wortel dengan rentang 19–19% dan label Indikasi busuk" width="260"></td>
+    <td align="center" valign="top"><img src="docs/screenshots/hasil-belum-bisa-dinilai.png" alt="Foto bawang yang belum bisa dinilai karena tanda pembusukan belum dapat dipastikan" width="260"></td>
+  </tr>
+</table>
+
+| Contoh | Hasil yang ditampilkan | Penjelasan |
+|---|---|---|
+| Segar | Wortel, **65–80%**, label **Segar** | Aplikasi mendeskripsikan warna oranye cerah dan sisa tangkai hijau pada sebagian wortel. |
+| Kondisi kurang baik | Wortel, **19–19%**, label **Indikasi busuk** | Aplikasi melaporkan area kulit menghitam dan tampak cekung. Skor dibatasi hingga 19 saat indikasi pembusukan dinilai jelas. |
+| Tidak bisa dinilai | **Foto belum bisa dinilai**, tanpa skor | Tanda pembusukan belum dapat dipastikan. Aplikasi meminta foto lebih dekat pada bagian bercak atau rusak, serta pemisahan objek yang kondisinya berbeda. |
+
+Angka persentase pada tampilan merupakan rentang perkiraan visual aplikasi, bukan persentase keamanan pangan. Status **belum bisa dinilai** berarti informasi visual belum cukup untuk memberikan penilaian; status ini tidak otomatis berarti bahan busuk atau jenisnya tidak dikenali.
+
 ## Menjalankan lokal
 
 Jalankan dari root proyek. Alur penyimpanan dataset menggunakan `fcntl`, sehingga saat ini memerlukan macOS/Linux; Windows native belum didukung (gunakan lingkungan Linux seperti WSL).
