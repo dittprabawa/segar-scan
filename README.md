@@ -14,9 +14,9 @@ Foto yang diproses disimpan ke antrean **pending** untuk ditinjau manusia. Setel
 
 Skor 0–100 adalah perkiraan visual dan aturan kategori aplikasi, bukan persentase keamanan pangan. Akurasi pengenalan jenis dan pembusukan pada foto lapangan belum divalidasi. Bagian bahan yang tertutup tidak dapat dinilai dari foto.
 
-## Tampilan aplikasi — dark theme
+## Tampilan aplikasi
 
-Berikut tampilan SegarScan pada iPhone, termasuk layar scan, proses penilaian, hasil, dan dialog informasi.
+Berikut tampilan SegarScan pada iPhone dalam light theme dan dark theme, termasuk layar scan, proses penilaian, hasil, dan dialog informasi.
 
 <table>
   <tr>
@@ -29,6 +29,19 @@ Berikut tampilan SegarScan pada iPhone, termasuk layar scan, proses penilaian, h
   </tr>
   <tr>
     <td colspan="2" align="center"><strong>Pratinjau tab Safari</strong><br><img src="docs/screenshots/dark-theme-safari-tabs.jpg" alt="Pratinjau tab SegarScan di Safari iPhone" width="260"></td>
+  </tr>
+</table>
+
+### Light theme
+
+<table>
+  <tr>
+    <td align="center"><strong>Halaman scan</strong><br><img src="docs/screenshots/light-theme-home.png" alt="Halaman scan SegarScan dalam light theme" width="260"></td>
+    <td align="center"><strong>Hasil penilaian</strong><br><img src="docs/screenshots/light-theme-result.png" alt="Hasil penilaian SegarScan dalam light theme" width="260"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Proses penilaian</strong><br><img src="docs/screenshots/light-theme-loading.png" alt="Layar proses penilaian SegarScan dalam light theme" width="260"></td>
+    <td align="center"><strong>Dialog informasi</strong><br><img src="docs/screenshots/light-theme-info.png" alt="Dialog informasi SegarScan dalam light theme" width="260"></td>
   </tr>
 </table>
 
