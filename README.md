@@ -263,7 +263,7 @@ Untuk alur deployment online, foto pending tidak disimpan di Git repository (`da
 [ Pengguna Scan di Vercel ]
            │
            ▼
-[ Penyimpanan Online ] (Supabase Storage / Cloudflare R2 / AWS S3 / Vercel Blob)
+[ Penyimpanan Online ] (Supabase Storage / Vercel Blob)
            │
            ▼
 [ Verifikasi Admin di Laptop ] (`python scripts/review_dataset.py verify` / `sync`)
@@ -281,14 +281,10 @@ Untuk alur deployment online, foto pending tidak disimpan di Git repository (`da
    - Object Storage bucket `pending` untuk file foto (`.img`) dan cadangan JSON.
    - Tabel PostgreSQL `pending_scans` untuk metadata terstruktur (skema tersedia di `scripts/supabase_schema.sql`).
    - Variabel lingkungan: `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (server; legacy `SUPABASE_KEY` juga didukung), `SUPABASE_STORAGE_BUCKET`, `SUPABASE_TABLE`.
-2. **Cloudflare R2 / AWS S3**:
-   - S3-compatible Object Storage dengan gratis 10 GB dan bebas biaya transfer (egress) di Cloudflare R2.
-   - Menggunakan pure Python SigV4 via `httpx` (tanpa perlu menambah dependensi berat di Vercel).
-   - Variabel lingkungan: `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_ENDPOINT_URL`, `S3_REGION`.
-3. **Vercel Blob**:
+2. **Vercel Blob**:
    - Terintegrasi langsung dalam 1 klik di dashboard Vercel.
    - Variabel lingkungan: `BLOB_READ_WRITE_TOKEN`.
-4. **Penyimpanan Lokal**:
+3. **Penyimpanan Lokal**:
    - Digunakan otomatis saat aplikasi berjalan lokal tanpa kredensial cloud (`data/pending/`).
 
 Foto pending dan `scripts/images/` dikecualikan dari Git dan tidak disajikan sebagai endpoint publik. Batas default adalah 512 MB untuk pending dan 2 GB untuk foto/CSV terverifikasi. Pending yang belum diverifikasi dibersihkan setelah 30 hari; data verified dipertahankan. Data gambar yang dikirim ke Gemini mengikuti alur layanan penilai. Rate limiter, semaphore, dan jeda model berlaku per proses, bukan global lintas instance.

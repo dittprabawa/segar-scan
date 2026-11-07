@@ -83,7 +83,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--pending-dir', type=Path, default=direktori(),
                         help='Direktori penyimpanan pending lokal')
-    parser.add_argument('--storage', choices=['auto', 'local', 'supabase', 's3', 'r2', 'vercel_blob'],
+    parser.add_argument('--storage', choices=['auto', 'local', 'supabase', 'vercel_blob'],
                         default='auto', help='Target storage backend (default: auto)')
 
     commands = parser.add_subparsers(dest='command', required=True)

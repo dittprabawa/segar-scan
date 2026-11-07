@@ -13,10 +13,8 @@ import pytest
 from backend.app.services.cloud_storage import (
     LocalStorageBackend,
     SupabaseStorageBackend,
-    S3StorageBackend,
     VercelBlobStorageBackend,
     get_storage_backend,
-    sign_aws_v4,
     validasi_id,
 )
 from backend.app.services import dataset_pending
@@ -43,24 +41,6 @@ def test_validasi_id():
 
     with pytest.raises(ValueError, match="ID foto tidak valid"):
         validasi_id("../" + "a" * 61)
-
-
-def test_sign_aws_v4():
-    headers = sign_aws_v4(
-        method="PUT",
-        url="https://test-account.r2.cloudflarestorage.com/pending-bucket/test.img",
-        body=b"bytes",
-        access_key="ACCESSKEY123",
-        secret_key="SECRETKEY123",
-        region="auto",
-        service="s3",
-        content_type="image/octet-stream",
-    )
-    assert "Authorization" in headers
-    assert headers["Authorization"].startswith("AWS4-HMAC-SHA256 Credential=ACCESSKEY123/")
-    assert "x-amz-date" in headers
-    assert headers["x-amz-content-sha256"] == hashlib.sha256(b"bytes").hexdigest()
-    assert headers["content-type"] == "image/octet-stream"
 
 
 # ============================================================================
@@ -154,76 +134,6 @@ def test_supabase_list_and_verify():
 
 
 # ============================================================================
-# 3. TES S3 / CLOUDFLARE R2 BACKEND
-# ============================================================================
-
-def test_s3_backend_operations():
-    data = buat_foto_dummy()
-    pid = hashlib.sha256(data).hexdigest()
-    record = {
-        "id": pid,
-        "status_review": "pending",
-        "created_at": "2026-11-06T10:00:00+00:00",
-        "request_id": "req-s3",
-        "prediksi_sementara": {"jenis": "tomat", "status": "ok"},
-    }
-
-    mock_client = Mock(spec=httpx.Client)
-    # PUT response
-    mock_client.request.return_value = Mock(status_code=200, text="ok")
-
-    backend = S3StorageBackend(
-        bucket="my-bucket",
-        access_key="AKIA123",
-        secret_key="SECRET123",
-        endpoint_url="https://account.r2.cloudflarestorage.com",
-        region="auto",
-        prefix="pending/",
-        client=mock_client,
-    )
-
-    assert backend.is_online() is True
-    assert backend.get_info()["tipe"] == "s3"
-
-    # Save
-    saved_id = backend.save_pending(pid, data, record)
-    assert saved_id == pid
-    assert mock_client.request.call_count == 2  # .img dan .json
-
-    # Get image
-    mock_client.request.return_value = Mock(status_code=200, content=data)
-    assert backend.get_pending_image(pid) == data
-
-    # Get metadata
-    mock_client.request.return_value = Mock(status_code=200, text=json.dumps(record))
-    meta = backend.get_pending_metadata(pid)
-    assert meta["id"] == pid
-
-    # List pending via XML
-    xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
-    <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-        <Contents>
-            <Key>pending/{pid}.json</Key>
-        </Contents>
-        <Contents>
-            <Key>pending/{pid}.img</Key>
-        </Contents>
-    </ListBucketResult>"""
-
-    def mock_request_router(method, url, **kwargs):
-        if "list-type=2" in url:
-            return Mock(status_code=200, text=xml_content)
-        if url.endswith(".json"):
-            return Mock(status_code=200, text=json.dumps(record))
-        return Mock(status_code=200, content=data)
-
-    mock_client.request.side_effect = mock_request_router
-    items = backend.list_pending()
-    assert len(items) == 1
-    assert items[0]["id"] == pid
-
-
-# ============================================================================
 # 4. TES VERCEL BLOB BACKEND
 # ============================================================================
 
@@ -276,7 +186,6 @@ def test_factory_detection(monkeypatch, tmp_path):
     monkeypatch.delenv("SUPABASE_URL", raising=False)
     monkeypatch.delenv("SUPABASE_KEY", raising=False)
     monkeypatch.delenv("BLOB_READ_WRITE_TOKEN", raising=False)
-    monkeypatch.delenv("S3_BUCKET", raising=False)
 
     backend = get_storage_backend()
     assert isinstance(backend, LocalStorageBackend)
@@ -292,14 +201,6 @@ def test_factory_detection(monkeypatch, tmp_path):
     monkeypatch.setenv("BLOB_READ_WRITE_TOKEN", "token_123")
     backend_blob = get_storage_backend()
     assert isinstance(backend_blob, VercelBlobStorageBackend)
-
-    # Deteksi S3 / R2
-    monkeypatch.delenv("BLOB_READ_WRITE_TOKEN")
-    monkeypatch.setenv("S3_BUCKET", "bucket-ku")
-    monkeypatch.setenv("S3_ACCESS_KEY_ID", "key-ku")
-    monkeypatch.setenv("S3_SECRET_ACCESS_KEY", "secret-ku")
-    backend_s3 = get_storage_backend()
-    assert isinstance(backend_s3, S3StorageBackend)
 
     # Eksplisit root selalu memakai local
     backend_root = get_storage_backend(root=tmp_path)

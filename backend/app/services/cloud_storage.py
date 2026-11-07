@@ -1,16 +1,13 @@
-"""Abstraksi penyimpanan dataset pending: lokal, Supabase, S3/Cloudflare R2, dan Vercel Blob."""
+"""Abstraksi penyimpanan dataset pending: lokal, Supabase, dan Vercel Blob."""
 
 import abc
 from datetime import datetime, timezone, timedelta
-import hashlib
-import hmac
 import json
 import logging
 import os
 from pathlib import Path
 import re
 import tempfile
-import urllib.parse
 from typing import Optional, List, Dict, Any
 
 import httpx
@@ -522,228 +519,7 @@ class SupabaseStorageBackend(StorageBackend):
 
 
 # ============================================================================
-# 3. S3 / CLOUDFLARE R2 BACKEND
-# ============================================================================
-
-def sign_aws_v4(
-    method: str,
-    url: str,
-    body: bytes,
-    access_key: str,
-    secret_key: str,
-    region: str = "auto",
-    service: str = "s3",
-    content_type: Optional[str] = None,
-) -> Dict[str, str]:
-    """Menghasilkan header AWS Signature Version 4 dalam pure Python."""
-    parsed = urllib.parse.urlsplit(url)
-    now = datetime.now(timezone.utc)
-    amz_date = now.strftime("%Y%m%dT%H%M%SZ")
-    date_stamp = now.strftime("%Y%m%d")
-    payload_hash = hashlib.sha256(body).hexdigest()
-
-    headers = {
-        "host": parsed.netloc,
-        "x-amz-date": amz_date,
-        "x-amz-content-sha256": payload_hash,
-    }
-    if content_type:
-        headers["content-type"] = content_type
-
-    sorted_header_names = sorted(headers.keys())
-    canonical_headers = "".join(f"{k}:{headers[k]}\n" for k in sorted_header_names)
-    signed_headers = ";".join(sorted_header_names)
-
-    query_params = urllib.parse.parse_qsl(parsed.query, keep_blank_values=True)
-    canonical_query = urllib.parse.urlencode(sorted(query_params))
-
-    canonical_request = (
-        f"{method}\n{parsed.path}\n{canonical_query}\n{canonical_headers}\n{signed_headers}\n{payload_hash}"
-    )
-
-    algorithm = "AWS4-HMAC-SHA256"
-    credential_scope = f"{date_stamp}/{region}/{service}/aws4_request"
-    string_to_sign = (
-        f"{algorithm}\n{amz_date}\n{credential_scope}\n{hashlib.sha256(canonical_request.encode('utf-8')).hexdigest()}"
-    )
-
-    k_date = hmac.new(("AWS4" + secret_key).encode("utf-8"), date_stamp.encode("utf-8"), hashlib.sha256).digest()
-    k_region = hmac.new(k_date, region.encode("utf-8"), hashlib.sha256).digest()
-    k_service = hmac.new(k_region, service.encode("utf-8"), hashlib.sha256).digest()
-    k_signing = hmac.new(k_service, b"aws4_request", hashlib.sha256).digest()
-    signature = hmac.new(k_signing, string_to_sign.encode("utf-8"), hashlib.sha256).hexdigest()
-
-    auth_header = (
-        f"{algorithm} Credential={access_key}/{credential_scope}, "
-        f"SignedHeaders={signed_headers}, Signature={signature}"
-    )
-    headers["Authorization"] = auth_header
-    return headers
-
-
-class S3StorageBackend(StorageBackend):
-    """
-    Penyimpanan cloud object storage kompatibel S3 (Cloudflare R2, AWS S3, MinIO, Wasabi).
-    Mendukung Cloudflare R2 tanpa biaya transfer (egress).
-    """
-
-    def __init__(
-        self,
-        bucket: str,
-        access_key: str,
-        secret_key: str,
-        endpoint_url: Optional[str] = None,
-        region: str = "auto",
-        prefix: str = "pending/",
-        client: Optional[httpx.Client] = None,
-    ):
-        self.bucket = bucket
-        self.access_key = access_key
-        self.secret_key = secret_key
-        self.endpoint_url = (endpoint_url or f"https://{bucket}.s3.{region}.amazonaws.com").rstrip("/")
-        self.region = region
-        self.prefix = prefix.strip("/") + ("/" if prefix.strip("/") else "")
-        self._client = client
-
-    def is_online(self) -> bool:
-        return True
-
-    def get_info(self) -> Dict[str, Any]:
-        return {
-            "tipe": "s3",
-            "bucket": self.bucket,
-            "prefix": self.prefix,
-            "region": self.region,
-            "online": True,
-        }
-
-    def _object_url(self, key: str) -> str:
-        # Menangani path-style (endpoint_url/bucket/key) atau virtual-hosted
-        if self.bucket in self.endpoint_url:
-            return f"{self.endpoint_url}/{key}"
-        return f"{self.endpoint_url}/{self.bucket}/{key}"
-
-    def _request(self, method: str, key: str, body: bytes = b"", content_type: Optional[str] = None, query: str = "") -> httpx.Response:
-        url = self._object_url(key)
-        if query:
-            url += f"?{query}"
-        headers = sign_aws_v4(
-            method=method,
-            url=url,
-            body=body,
-            access_key=self.access_key,
-            secret_key=self.secret_key,
-            region=self.region,
-            service="s3",
-            content_type=content_type,
-        )
-        client = self._client or httpx.Client(timeout=15.0)
-        should_close = self._client is None
-        try:
-            return client.request(method, url, headers=headers, content=body)
-        finally:
-            if should_close:
-                client.close()
-
-    def save_pending(self, photo_id: str, data: bytes, record: Dict[str, Any]) -> str:
-        validasi_id(photo_id)
-        if len(data) > MAX_PHOTO_BYTES:
-            raise ValueError(f"Foto melebihi batas maksimal {MAX_PHOTO_BYTES} byte")
-        # 1. Simpan foto .img
-        img_key = f"{self.prefix}{photo_id}.img"
-        res_img = self._request("PUT", img_key, body=data, content_type="image/octet-stream")
-        if res_img.status_code not in (200, 201):
-            raise RuntimeError(f"Gagal mengunggah foto ke S3 ({res_img.status_code}): {res_img.text[:120]}")
-
-        # 2. Simpan metadata .json
-        json_key = f"{self.prefix}{photo_id}.json"
-        meta_payload = json.dumps(record, ensure_ascii=False, indent=2).encode("utf-8")
-        res_meta = self._request("PUT", json_key, body=meta_payload, content_type="application/json")
-        if res_meta.status_code not in (200, 201):
-            raise RuntimeError(f"Gagal mengunggah metadata ke S3 ({res_meta.status_code})")
-
-        return photo_id
-
-    def get_pending_image(self, photo_id: str) -> bytes:
-        validasi_id(photo_id)
-        img_key = f"{self.prefix}{photo_id}.img"
-        res = self._request("GET", img_key)
-        if res.status_code != 200:
-            raise FileNotFoundError(f"Foto {photo_id} tidak ditemukan di S3/R2 ({res.status_code})")
-        return res.content
-
-    def get_pending_metadata(self, photo_id: str) -> Dict[str, Any]:
-        validasi_id(photo_id)
-        json_key = f"{self.prefix}{photo_id}.json"
-        res = self._request("GET", json_key)
-        if res.status_code != 200:
-            raise FileNotFoundError(f"Metadata {photo_id} tidak ditemukan di S3/R2 ({res.status_code})")
-        return json.loads(res.text)
-
-    def list_pending(self, jenis: Optional[str] = None) -> List[Dict[str, Any]]:
-        query = f"list-type=2&prefix={self.prefix}"
-        res = self._request("GET", "", query=query)
-        if res.status_code != 200:
-            return []
-        import xml.etree.ElementTree as ET
-        try:
-            root = ET.fromstring(res.text)
-        except Exception:
-            return []
-
-        records = []
-        for elem in root.iter():
-            tag_name = elem.tag.split("}")[-1]
-            if tag_name == "Key" and elem.text:
-                key = elem.text.strip()
-                if key.endswith(".json"):
-                    stem = key[len(self.prefix):-5] if key.startswith(self.prefix) else key[:-5]
-                    if not ID_PATTERN.fullmatch(stem):
-                        continue
-                    try:
-                        meta = self.get_pending_metadata(stem)
-                        if meta.get("status_review") != "pending":
-                            continue
-                        prediksi = meta.get("prediksi_sementara") or {}
-                        if jenis is not None and normalisasi(prediksi.get("jenis")) != normalisasi(jenis):
-                            continue
-                        meta["foto"] = f"s3://{self.bucket}/{self.prefix}{stem}.img"
-                        meta["storage_backend"] = "s3"
-                        records.append(meta)
-                    except Exception:
-                        continue
-        return records
-
-    def mark_verified(self, photo_id: str, verified_record: Dict[str, Any]) -> None:
-        validasi_id(photo_id)
-        json_key = f"{self.prefix}{photo_id}.json"
-        meta_payload = json.dumps(verified_record, ensure_ascii=False, indent=2).encode("utf-8")
-        self._request("PUT", json_key, body=meta_payload, content_type="application/json")
-
-    def cleanup_expired(self, retention_days: int = 30, dry_run: bool = False) -> Dict[str, Any]:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
-        pending_list = self.list_pending()
-        expired_ids = []
-        for r in pending_list:
-            try:
-                created = datetime.fromisoformat(r["created_at"])
-                if created < cutoff:
-                    expired_ids.append(r["id"])
-            except Exception:
-                continue
-
-        if dry_run or not expired_ids:
-            return {"id_kedaluwarsa": expired_ids, "dry_run": dry_run, "backend": "s3"}
-
-        for eid in expired_ids:
-            self._request("DELETE", f"{self.prefix}{eid}.img")
-            self._request("DELETE", f"{self.prefix}{eid}.json")
-
-        return {"id_kedaluwarsa": expired_ids, "dry_run": False, "backend": "s3"}
-
-
-# ============================================================================
-# 4. VERCEL BLOB STORAGE BACKEND
+# 3. VERCEL BLOB STORAGE BACKEND
 # ============================================================================
 
 class VercelBlobStorageBackend(StorageBackend):
@@ -954,7 +730,7 @@ def get_storage_backend(
     Factory untuk memilih storage backend berdasarkan konfigurasi:
     1. Jika backend_type diberikan secara eksplisit, gunakan tipe itu.
     2. Jika root diberikan dan tidak ada tipe online eksplisit, gunakan LocalStorageBackend(root).
-    3. Jika tidak, periksa variabel lingkungan (STORAGE_BACKEND, SUPABASE_*, BLOB_*, S3_*).
+    3. Jika tidak, periksa variabel lingkungan (STORAGE_BACKEND, SUPABASE_*, BLOB_*).
     4. Default: LocalStorageBackend.
     """
     tipe = (backend_type or os.getenv("STORAGE_BACKEND", "")).lower().strip()
@@ -993,26 +769,7 @@ def get_storage_backend(
         prefix = os.getenv("BLOB_PREFIX", "pending/")
         return VercelBlobStorageBackend(token=token, prefix=prefix)
 
-    # 3. S3 / Cloudflare R2
-    if tipe in ("s3", "r2") or (not tipe and (os.getenv("S3_BUCKET") or os.getenv("R2_BUCKET") or os.getenv("AWS_S3_BUCKET"))):
-        bucket = os.getenv("S3_BUCKET") or os.getenv("R2_BUCKET") or os.getenv("AWS_S3_BUCKET")
-        access_key = os.getenv("S3_ACCESS_KEY_ID") or os.getenv("R2_ACCESS_KEY_ID") or os.getenv("AWS_ACCESS_KEY_ID")
-        secret_key = os.getenv("S3_SECRET_ACCESS_KEY") or os.getenv("R2_SECRET_ACCESS_KEY") or os.getenv("AWS_SECRET_ACCESS_KEY")
-        endpoint_url = os.getenv("S3_ENDPOINT_URL") or os.getenv("R2_ENDPOINT_URL")
-        region = os.getenv("S3_REGION") or os.getenv("AWS_DEFAULT_REGION", "auto")
-        prefix = os.getenv("S3_PREFIX", "pending/")
-        if not bucket or not access_key or not secret_key:
-            raise ValueError("S3_BUCKET, S3_ACCESS_KEY_ID, dan S3_SECRET_ACCESS_KEY wajib diset untuk backend S3")
-        return S3StorageBackend(
-            bucket=bucket,
-            access_key=access_key,
-            secret_key=secret_key,
-            endpoint_url=endpoint_url,
-            region=region,
-            prefix=prefix,
-        )
-
-    # 4. Default: Local
+    # 3. Default: Local
     from backend.app.services.dataset_pending import DEFAULT_DIR, direktori
     target_root = Path(root) if root is not None else direktori()
     return LocalStorageBackend(root=target_root)

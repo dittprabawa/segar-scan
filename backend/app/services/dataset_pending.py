@@ -131,7 +131,7 @@ def simpan(data: bytes, hasil: Dict[str, Any], req_id: str, root: Optional[Path]
                 raise
         return identitas
 
-    # Alur Cloud (Supabase, S3/R2, Vercel Blob)
+    # Alur cloud (Supabase, Vercel Blob)
     record = {
         "id": identitas,
         "status_review": "pending",
