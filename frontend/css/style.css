@@ -553,6 +553,13 @@ dialog::backdrop {
   }
 }
 
+/* Memastikan logo kembali ke warna gelap aslinya saat perangkat menggunakan Light Mode */
+@media (prefers-color-scheme: light) {
+  .brand .logo img {
+    filter: none;
+  }
+}
+
 
 /* HASIL SCAN FULL HEIGHT MOBILE */
 
