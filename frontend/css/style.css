@@ -546,6 +546,13 @@ dialog::backdrop {
   }
 }
 
+/* Mengubah logo topi koki menjadi putih saat perangkat menggunakan Dark Mode */
+@media (prefers-color-scheme: dark) {
+  .brand .logo img {
+    filter: brightness(0) invert(1);
+  }
+}
+
 
 /* HASIL SCAN FULL HEIGHT MOBILE */
 
