@@ -15,7 +15,7 @@ from typing import Optional
 from PIL import Image
 
 # Naikkan versi ini setiap kali isi PROMPT diubah.
-PROMPT_VERSION = "p4"
+PROMPT_VERSION = "p5"
 
 PROMPT = """Kamu menilai kesegaran SATU jenis bahan dapur (sayuran atau daging mentah) dari foto, untuk konsumen di pasar.
 Balas HANYA JSON dengan kunci persis ini:
@@ -41,9 +41,9 @@ Aturan:
 - Untuk sayuran, skor: 80-100 sangat segar, 60-79 segar, 40-59 segera olah, 20-39 layu, 0-19 tidak layak.
 - Untuk daging, skor 0-100 menggambarkan kondisi visual, bukan probabilitas aman atau kesegaran terukur; jangan memakai istilah layu atau menyarankan segera dimasak untuk mengatasi kerusakan.
 - Periksa tanda pembusukan SEBELUM memberi skor: jelaskan lokasi dan bentuk kerusakan yang benar-benar terlihat. Jangan menilai hanya dari warna cerah atau kilap.
-- Untuk wortel, periksa ujung, pangkal, dan permukaan tiap wortel yang terlihat: area gelap yang tampak rusak/cekung, jaringan hancur atau basah membusuk, dan pertumbuhan menyerupai jamur. Jangan mengabaikan kerusakan karena sebagian besar permukaan masih oranye.
+- Untuk wortel, periksa ujung, pangkal, dan permukaan tiap wortel yang terlihat: area gelap yang tampak rusak/cekung, jaringan hancur atau basah membusuk, dan pertumbuhan menyerupai jamur. Beberapa area kulit yang menghitam dan tampak cekung pada satu atau beberapa wortel merupakan bukti visual kuat pembusukan; tandai pembusukan=jelas dan skor 0-19 meskipun bagian lain masih oranye atau wortel berada dalam jaring plastik. Jangan mengabaikan kerusakan karena sebagian besar permukaan masih oranye.
 - pembusukan=jelas jika terdapat bukti visual kuat pembusukan pada bagian mana pun yang terlihat. Beri skor serta seluruh rentang 0-19. Bahan busuk tetap valid=true jika jenis dan kerusakannya jelas: valid berarti foto dapat dinilai, bukan sayurnya segar.
-- Bercak hitam saja tidak membuktikan busuk: tanah, bayangan, dan luka kering dapat terlihat mirip. Jika tidak dapat dibedakan, pembusukan=meragukan; jelaskan ketidakpastiannya dan minta foto dekat area tersebut, jangan menyimpulkan segar.
+- Bercak hitam tunggal tanpa cekungan atau kerusakan jaringan yang terlihat tidak membuktikan busuk: tanah, bayangan, dan luka kering dapat terlihat mirip. Jika hanya ada bercak tunggal yang tidak dapat dibedakan, pembusukan=meragukan; jelaskan ketidakpastiannya dan minta foto dekat area tersebut, jangan menyimpulkan segar. Untuk beberapa area menghitam yang jelas tampak cekung/rusak pada wortel, gunakan aturan wortel di atas, bukan meragukan.
 - pembusukan=tidak_terlihat hanya jika bagian yang terlihat tidak menunjukkan tanda pembusukan atau bercak mencurigakan; ini bukan jaminan seluruh bahan bebas pembusukan.
 - Beberapa buah, potongan daging, atau ikat dari SATU jenis diperbolehkan. Periksa kondisi yang bervariasi; jangan merata-ratakan bagian busuk dengan bagian segar sehingga tumpukan dinilai segar. Jelaskan jika kerusakan hanya terlihat pada sebagian objek. Bagian tertutup tidak boleh diasumsikan segar.
 - Nilai juga kelayuan dan kerusakan fisik. Jangan menyimpulkan aroma, tekstur saat disentuh, atau kondisi bagian dalam dari foto.
@@ -53,7 +53,7 @@ Aturan:
 """
 
 # BE17: versi prompt. SENGAJA konstanta di samping PROMPT, bukan env, supaya ikut berubah
-# bersama teks prompt. Naikkan (p3, p4, ...) setiap kali PROMPT diubah; tes_prompt_versi
+# bersama teks prompt. Naikkan (p3, p4, p5, ...) setiap kali PROMPT diubah; tes_prompt_versi
 # akan gagal bila teks prompt berubah tanpa versi baru.
 log = logging.getLogger("segarscan")
 
