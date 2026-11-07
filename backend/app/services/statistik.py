@@ -1,4 +1,5 @@
-"""Statistik prediksi dalam memori, per proses (bukan agregat lintas Vercel)."""
+"""Statistik prediksi dalam memori, per proses."""
+
 from threading import Lock
 
 

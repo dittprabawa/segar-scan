@@ -21,11 +21,11 @@ from backend.app.services.gambar import buka_gambar, TerlaluBesar, BukanGambar
 # ==========================================
 DATASET_CSV = Path("scripts/dataset.csv")
 IMAGES_DIR = Path("scripts/images")
-PROMPT_VERSION = os.getenv("PROMPT_VERSION", "v1.0.0")  # BE17: Versi Prompt
+PROMPT_VERSION = os.getenv("PROMPT_VERSION", "v1.0.0")
 
 def hitung_akurasi():
     logger.info(f"=== Memulai Evaluasi SegerScan ===")
-    logger.info(f"Versi Prompt Gemini : {PROMPT_VERSION} (BE17)")
+    logger.info(f"Versi Prompt Gemini : {PROMPT_VERSION}")
     
     service = InferenceService()
     if not getattr(service, "siap", service.model is not None):
@@ -36,7 +36,6 @@ def hitung_akurasi():
     prediksi_benar = 0
     waktu_total = 0
     
-    # Metrik Kalibrasi BE19
     ukuran_file_stats = []
     
     hasil_detail = []
@@ -101,7 +100,6 @@ def hitung_akurasi():
     akurasi = (prediksi_benar / total_data) * 100 if total_data > 0 else 0
     avg_time = waktu_total / total_data if total_data > 0 else 0
     
-    # BE19: Statistik untuk Kalibrasi Filter Foto
     min_size = min(ukuran_file_stats) if ukuran_file_stats else 0
     max_size = max(ukuran_file_stats) if ukuran_file_stats else 0
     avg_size = sum(ukuran_file_stats) / len(ukuran_file_stats) if ukuran_file_stats else 0
@@ -109,17 +107,17 @@ def hitung_akurasi():
     print("\n" + "="*40)
     print("LAPORAN EVALUASI AKHIR")
     print("="*40)
-    print(f"Versi Prompt       : {PROMPT_VERSION} (BE17)")
+    print(f"Versi Prompt       : {PROMPT_VERSION}")
     print(f"Total Foto Uji     : {total_data}")
     print(f"Prediksi Benar     : {prediksi_benar}")
     print(f"Akurasi Keseluruhan: {akurasi:.2f}%")
     print(f"Rata-rata Waktu    : {avg_time:.2f} detik/foto")
     print("-" * 40)
-    print("KALIBRASI FILTER FOTO (BE19)")
+    print("KALIBRASI FILTER FOTO")
     print(f"Ukuran Terkecil    : {min_size:.2f} KB")
     print(f"Ukuran Terbesar    : {max_size:.2f} KB")
     print(f"Rata-rata Ukuran   : {avg_size:.2f} KB")
-    print("Tindakan BE19      : Gunakan data ukuran ini untuk merevisi `MAKS_BYTES` di main.py jika perlu.")
+    print("Tindakan          : Gunakan data ukuran ini untuk merevisi `MAKS_BYTES` di main.py jika perlu.")
     print("="*40)
     
     # Opsional: Simpan laporan ke CSV baru

@@ -90,7 +90,7 @@ class InferenceService:
     # --- pembantu -----------------------------------------------------
     @staticmethod
     def _catat(rid: str, hasil: dict, penilai: str, sibuk: bool = False) -> None:
-        """BE12-13 dan BE17: satu baris ringkas hasil prediksi (tanpa isi gambar)."""
+        """Satu baris ringkas hasil prediksi (tanpa isi gambar)."""
         log.info(
             "[%s] hasil status=%s skor=%s rentang=%s-%s jenis=%s keyakinan=%s model=%s "
             "prompt=%s penilai=%s sibuk=%s%s",

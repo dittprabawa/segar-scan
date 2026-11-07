@@ -52,9 +52,6 @@ Aturan:
 - Ini perkiraan visual. Jangan menyebut aman dimakan, bebas pestisida, atau pasti segar.
 """
 
-# BE17: versi prompt. SENGAJA konstanta di samping PROMPT, bukan env, supaya ikut berubah
-# bersama teks prompt. Naikkan (p3, p4, p5, ...) setiap kali PROMPT diubah; tes_prompt_versi
-# akan gagal bila teks prompt berubah tanpa versi baru.
 log = logging.getLogger("segarscan")
 
 _client = None
@@ -172,7 +169,9 @@ def _jawaban_sibuk() -> dict:
     }
 
 
-def batas_waktu(deadline: Optional[float], per_model: float, minimum: float = 3.0) -> Optional[float]:
+def batas_waktu(
+    deadline: Optional[float], per_model: float, minimum: float = 3.0
+) -> Optional[float]:
     """Detik yang boleh dipakai model, atau None bila sisa waktu terlalu sedikit.
 
     deadline  : waktu monotonic batas akhir seluruh permintaan (None = tanpa batas total)
@@ -190,12 +189,16 @@ def _opsi_http(types, detik: float):
     """Batas waktu per model dan tanpa ulangan otomatis."""
     ms = int(detik * 1000)
     try:
-        return types.HttpOptions(timeout=ms, retry_options=types.HttpRetryOptions(attempts=1))
+        return types.HttpOptions(
+            timeout=ms, retry_options=types.HttpRetryOptions(attempts=1)
+        )
     except Exception:  # versi SDK lama tanpa retry_options
         return types.HttpOptions(timeout=ms)
 
 
-def _panggil_model(model: str, isi, types, detik: float, tunggu_slot: float, rid: str) -> dict:
+def _panggil_model(
+    model: str, isi, types, detik: float, tunggu_slot: float, rid: str
+) -> dict:
     """Satu panggilan ke satu model. Dijalankan di thread terpisah."""
     t_antre = time.monotonic()
     if not _slot.acquire(timeout=tunggu_slot):
@@ -211,7 +214,9 @@ def _panggil_model(model: str, isi, types, detik: float, tunggu_slot: float, rid
             max_output_tokens=int(os.getenv("VLM_MAX_TOKEN_JAWABAN", "1024")),
             http_options=_opsi_http(types, detik),
         )
-        resp = _get_client().models.generate_content(model=model, contents=isi, config=config)
+        resp = _get_client().models.generate_content(
+            model=model, contents=isi, config=config
+        )
         teks = resp.text
         d = _bersihkan(teks)
         if d.get("valid", False) and _angka(d.get("skor")) is None:
@@ -268,7 +273,7 @@ def nilai(
     - Error lain (timeout, JSON rusak, dll.) yang menimpa semua model tetap dilempar.
     - req_id : ID permintaan dari lapisan HTTP (opsional); bila kosong dibuat otomatis.
       Setiap baris log permintaan ini diawali "[req_id]".
-    - Hasil yang melibatkan model (valid maupun ditolak model) memuat "prompt_versi" (BE17).
+    - Hasil yang melibatkan model (valid maupun ditolak model) memuat "prompt_versi".
     """
     from google.genai import types
 
@@ -305,7 +310,9 @@ def nilai(
     ukuran = int(os.getenv("VLM_UKURAN_GAMBAR", "768"))
     kualitas = int(os.getenv("VLM_KUALITAS_JPEG", "82"))
     asal = image.size
-    img = image.convert("RGB")  # JPEG tidak mendukung transparansi (RGBA/P); hasilnya salinan
+    img = image.convert(
+        "RGB"
+    )  # JPEG tidak mendukung transparansi (RGBA/P); hasilnya salinan
     img.thumbnail((ukuran, ukuran))  # hanya mengecilkan, tidak pernah memperbesar
     buf = io.BytesIO()
     img.save(buf, "JPEG", quality=kualitas)
@@ -363,7 +370,13 @@ def nilai(
                     continue
                 # Timeout HTTP minimal _DEADLINE_MIN_API; loop ini tetap berhenti di batas_akhir.
                 f = pool.submit(
-                    _panggil_model, m, isi, types, max(detik_m, _DEADLINE_MIN_API), tunggu_slot, rid
+                    _panggil_model,
+                    m,
+                    isi,
+                    types,
+                    max(detik_m, _DEADLINE_MIN_API),
+                    tunggu_slot,
+                    rid,
                 )
                 futures[f] = m
                 aktif.add(f)
@@ -387,7 +400,9 @@ def nilai(
                 m = futures[f]
                 try:
                     r = f.result()
-                except Exception as e:  # 503 padat, 429 kuota, timeout, JSON rusak, dll.
+                except (
+                    Exception
+                ) as e:  # 503 padat, 429 kuota, timeout, JSON rusak, dll.
                     hasil[m] = _status_galat(e)
                     if hasil[m] in ("slot_penuh", "429"):
                         sibuk = True
@@ -401,7 +416,9 @@ def nilai(
                 hasil[m] = "menolak"
                 if tolakan is None:
                     tolakan = r
-                    log.info("[%s] %s menolak foto, menunggu konfirmasi model lain", rid, m)
+                    log.info(
+                        "[%s] %s menolak foto, menunggu konfirmasi model lain", rid, m
+                    )
                 else:
                     d = tolakan  # dua model sepakat menolak
                     hasil[d["_model"]] = "menang"
@@ -410,7 +427,9 @@ def nilai(
         pool.shutdown(wait=False, cancel_futures=True)
         diluncurkan = set(futures.values())
         for m in models:
-            if m not in diluncurkan:  # tidak perlu dipanggil karena sudah ada hasil / waktu habis
+            if (
+                m not in diluncurkan
+            ):  # tidak perlu dipanggil karena sudah ada hasil / waktu habis
                 hasil.setdefault(m, "tidak_dipanggil")
             else:  # belum selesai saat pemenang sudah ada, atau saat waktu habis
                 hasil.setdefault(m, "dibatalkan" if d is not None else "timeout")
@@ -440,7 +459,10 @@ def nilai(
     keyakinan = str(d.get("keyakinan", "sedang")).lower()
     if keyakinan not in ("rendah", "sedang", "tinggi"):
         keyakinan = "sedang"
-    selesai(f"ok jenis={d.get('jenis')} skor={skor:.0f} keyakinan={keyakinan}", d.get("_model"))
+    selesai(
+        f"ok jenis={d.get('jenis')} skor={skor:.0f} keyakinan={keyakinan}",
+        d.get("_model"),
+    )
     return {
         "valid": True,
         "jenis": str(d.get("jenis") or "unknown").lower(),

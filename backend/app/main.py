@@ -14,44 +14,47 @@ from dotenv import load_dotenv
 
 load_dotenv()  # baca .env sebelum layanan dibuat
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile  # noqa: E402
-from fastapi.exceptions import RequestValidationError  # noqa: E402
-from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
-from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
-from fastapi.staticfiles import StaticFiles  # noqa: E402
-from backend.app.slowapi_compat import Limiter  # noqa: E402
-from slowapi.errors import RateLimitExceeded  # noqa: E402
-from slowapi.util import get_remote_address  # noqa: E402
-from starlette.types import ASGIApp, Scope, Receive, Send  # noqa: E402
-from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware  # noqa: E402
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from backend.app.slowapi_compat import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+from starlette.types import ASGIApp, Scope, Receive, Send
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
-from backend.app.schemas import PredictionResponse  # noqa: E402
-from backend.app.services import dataset_pending, jenis_lokal, vlm  # noqa: E402
+from backend.app.schemas import PredictionResponse
+from backend.app.services import dataset_pending, jenis_lokal, vlm
 from backend.app.services.gambar import (
     BukanGambar,
     TerlaluBesar,
     buka_gambar,
-)  # noqa: E402
-from backend.app.services.inference import InferenceService  # noqa: E402
-from backend.app.services.statistik import Statistik  # noqa: E402
+)
+from backend.app.services.inference import InferenceService
+from backend.app.services.statistik import Statistik
 
 MAKS_BYTES = 5 * 1024 * 1024  # 5 MB
 RATE_LIMIT = os.getenv("RATE_LIMIT", "10/minute")  # per IP
 
-# Konfigurasi Logging (BE12-BE13)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 # Nama logger disamakan dengan vlm.py dan inference.py
 logger = logging.getLogger("segarscan")
 
+
 async def cleanup_pending():
     while True:
         if dataset_pending.aktif():
             try:
                 result = await asyncio.to_thread(dataset_pending.bersihkan)
-                if result['id_kedaluwarsa']:
-                    logger.info("Dataset cleanup: %d foto pending kedaluwarsa", len(result['id_kedaluwarsa']))
+                if result["id_kedaluwarsa"]:
+                    logger.info(
+                        "Dataset cleanup: %d foto pending kedaluwarsa",
+                        len(result["id_kedaluwarsa"]),
+                    )
             except Exception as exc:
                 logger.error("Dataset cleanup gagal: %s", type(exc).__name__)
         await asyncio.sleep(3600)
@@ -77,35 +80,46 @@ def _rid(request: Request) -> str:
     return getattr(request.state, "req_id", "-")
 
 
-# BE3: Middleware untuk menolak request berdasarkan Content-Length sebelum diproses
 class LimitUploadSizeMiddleware:
     """Batasi body sebelum parser multipart, termasuk unggahan tanpa Content-Length."""
+
     def __init__(self, app: ASGIApp):
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
-        if scope['type'] != 'http' or scope['method'] != 'POST' or scope['path'] != '/predict':
+        if (
+            scope["type"] != "http"
+            or scope["method"] != "POST"
+            or scope["path"] != "/predict"
+        ):
             return await self.app(scope, receive, send)
         limit = MAKS_BYTES + 64 * 1024
-        headers = dict(scope.get('headers', []))
+        headers = dict(scope.get("headers", []))
         try:
-            length = int(headers.get(b'content-length', b'0'))
+            length = int(headers.get(b"content-length", b"0"))
             if length < 0:
                 raise ValueError
         except ValueError:
-            return await JSONResponse(status_code=400, content={'detail': 'Content-Length tidak valid'})(scope, receive, send)
+            return await JSONResponse(
+                status_code=400, content={"detail": "Content-Length tidak valid"}
+            )(scope, receive, send)
         if length > limit:
-            return await JSONResponse(status_code=413, content={'detail': 'Foto terlalu besar (maks 5 MB)'})(scope, receive, send)
+            return await JSONResponse(
+                status_code=413, content={"detail": "Foto terlalu besar (maks 5 MB)"}
+            )(scope, receive, send)
         body = bytearray()
         while True:
             message = await receive()
-            if message['type'] == 'http.disconnect':
+            if message["type"] == "http.disconnect":
                 return
-            chunk = message.get('body', b'')
+            chunk = message.get("body", b"")
             if len(body) + len(chunk) > limit:
-                return await JSONResponse(status_code=413, content={'detail': 'Foto terlalu besar (maks 5 MB)'})(scope, receive, send)
+                return await JSONResponse(
+                    status_code=413,
+                    content={"detail": "Foto terlalu besar (maks 5 MB)"},
+                )(scope, receive, send)
             body.extend(chunk)
-            if not message.get('more_body', False):
+            if not message.get("more_body", False):
                 break
         sent = False
 
@@ -113,7 +127,7 @@ class LimitUploadSizeMiddleware:
             nonlocal sent
             if not sent:
                 sent = True
-                return {'type': 'http.request', 'body': bytes(body), 'more_body': False}
+                return {"type": "http.request", "body": bytes(body), "more_body": False}
             return await receive()
 
         await self.app(scope, bounded_receive, send)
@@ -122,9 +136,6 @@ class LimitUploadSizeMiddleware:
 app.add_middleware(LimitUploadSizeMiddleware)
 
 
-# BE12-BE13: Middleware untuk Logging ID Permintaan, IP, Durasi, dan Status.
-# Didaftarkan SETELAH LimitUploadSizeMiddleware supaya menjadi lapisan di luarnya:
-# dengan begitu penolakan 413 dari BE3 juga tercatat dengan ID dan IP.
 async def log_requests(request: Request, call_next):
     req_id = uuid.uuid4().hex[:8]
     request.state.req_id = (
@@ -149,7 +160,8 @@ async def log_requests(request: Request, call_next):
     if request.method == "POST" and request.url.path == "/predict":
         request.app.state.statistik.catat(
             process_time * 1000,
-            ditolak=response.status_code == 200 and getattr(request.state, "prediksi_ditolak", False),
+            ditolak=response.status_code == 200
+            and getattr(request.state, "prediksi_ditolak", False),
             error=response.status_code >= 400,
         )
 
@@ -163,21 +175,16 @@ async def log_requests(request: Request, call_next):
 
 app.middleware("http")(log_requests)
 
-# BE6: Batasi CORS hanya untuk origin yang diizinkan melalui environment variable
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
 ).split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,  # Tidak lagi ["*"]
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
-# BE8: percayai X-Forwarded-For hanya dari proxy yang dikenal.
-# Ditambahkan PALING AKHIR agar jadi lapisan terluar, sehingga log_requests juga melihat IP asli.
-# Isi env TRUSTED_PROXIES dengan IP proxy dipisah koma. Default "127.0.0.1" (Nginx di mesin yang sama).
-# Jangan gunakan wildcard kecuali jaringan memastikan hanya proxy tepercaya yang dapat mengakses backend.
 TRUSTED_PROXIES = [
     h.strip() for h in os.getenv("TRUSTED_PROXIES", "127.0.0.1").split(",") if h.strip()
 ]
@@ -186,7 +193,6 @@ app.add_middleware(
     trusted_hosts="*" if "*" in TRUSTED_PROXIES else TRUSTED_PROXIES,
 )
 
-# BE5 & BE7: Rate limit per IP
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 service = InferenceService()
@@ -195,7 +201,7 @@ service = InferenceService()
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
     logger.warning(
-        f"[{_rid(request)}] Rate Limit tercapai (BE5/BE7) untuk IP: {get_remote_address(request)}"
+        f"[{_rid(request)}] Rate Limit tercapai untuk IP: {get_remote_address(request)}"
     )
     return JSONResponse(
         status_code=429,
@@ -236,13 +242,14 @@ def health():
 @limiter.limit(RATE_LIMIT)
 def predict(request: Request, file: UploadFile = File(...)):
     rid = _rid(request)
-    # Sengaja `def` (bukan `async def`): FastAPI menjalankannya di thread pool,
-    # sehingga menunggu Gemini tidak memblokir permintaan pengguna lain.
     siap = getattr(service, "siap", service.model is not None)
     if not siap:
-        raise HTTPException(status_code=503, detail="Model belum tersedia", headers={"Retry-After": "30"})
+        raise HTTPException(
+            status_code=503,
+            detail="Model belum tersedia",
+            headers={"Retry-After": "30"},
+        )
 
-    # Validasi lapis kedua jika Content-Length dimanipulasi atau tidak dikirim (chunked)
     data = file.file.read(MAKS_BYTES + 1)
     if len(data) > MAKS_BYTES:
         logger.warning(f"[{rid}] Penolakan: Ukuran data stream melebihi batas 5MB.")
@@ -270,7 +277,9 @@ def predict(request: Request, file: UploadFile = File(...)):
                 if kandidat is not None:
                     hasil["jenis_lokal"] = kandidat
             except Exception as exc:
-                logger.error("[%s] Model jenis lokal gagal: %s", rid, type(exc).__name__)
+                logger.error(
+                    "[%s] Model jenis lokal gagal: %s", rid, type(exc).__name__
+                )
         return hasil
     except RuntimeError:
         raise HTTPException(
@@ -286,7 +295,9 @@ def predict(request: Request, file: UploadFile = File(...)):
                 logger.info("[%s] Dataset pending: %s", rid, identitas)
             except Exception as exc:
                 # Gangguan disk tidak mengubah hasil penilaian pengguna.
-                logger.error("[%s] Gagal menyimpan dataset pending: %s", rid, type(exc).__name__)
+                logger.error(
+                    "[%s] Gagal menyimpan dataset pending: %s", rid, type(exc).__name__
+                )
 
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
