@@ -451,6 +451,22 @@ dialog::backdrop {
   font-size: 17px;
 }
 
+/* --- CLASS UNIVERSAL UNTUK SEMUA IKON --- */
+
+/* Saat HP/Laptop di mode Terang (Light Mode), paksa semua ikon jadi HITAM */
+@media (prefers-color-scheme: light) {
+  .ikon-tema {
+    filter: brightness(0); /* Kode ini akan mengubah gambar warna apapun menjadi hitam pekat */
+  }
+}
+
+/* Saat HP/Laptop di mode Gelap (Dark Mode), paksa semua ikon jadi PUTIH */
+@media (prefers-color-scheme: dark) {
+  .ikon-tema {
+    filter: brightness(0) invert(1);
+  }
+}
+
 /* ==========================================================================
    Responsif
    ========================================================================== */
@@ -798,18 +814,15 @@ dialog::backdrop {
   max-width: 20px;
   object-fit: contain;
   flex-shrink: 0;
-
-  /* Mengubah ikon hitam menjadi putih */
-  filter: brightness(0) invert(1);
+  /* Baris filter putih di sini sudah dihapus agar class .ikon-tema bisa bekerja */
 }
 
-
-/* Mengubah ikon kamera utama menjadi putih */
+/* Mengubah ikon kamera utama menjadi putih permanen */
 #camera-placeholder .camera-icon {
     width: 48px;
     height: 48px;
     object-fit: contain;
-    filter: brightness(0) invert(1);
+    filter: brightness(0) invert(1) !important; 
 }
 
 /* Jika gambar belum memakai class camera-icon */
@@ -817,5 +830,5 @@ dialog::backdrop {
     width: 48px;
     height: 48px;
     object-fit: contain;
-    filter: brightness(0) invert(1);
+    filter: brightness(0) invert(1) !important;
 }
